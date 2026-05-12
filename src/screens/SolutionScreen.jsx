@@ -37,12 +37,30 @@ const COLOR_TO_FACE = {
 };
 
 function buildCubeString(faceColors) {
+  // kociemba order: U R F D L B
   const order = ["U", "R", "F", "D", "L", "B"];
+
+  // Dynamically determine face letter from centre tile colour
+  // The centre tile (index 4) defines which face letter to use
+  const colourToLetter = {};
+  for (const face of order) {
+    const tiles = faceColors[face] || [];
+    const centreColour = tiles[4];
+    colourToLetter[centreColour] = face;
+  }
+
+  console.log("Colour to letter map:", colourToLetter);
+
   let str = "";
   for (const face of order) {
     const tiles = faceColors[face] || [];
-    for (const color of tiles) {
-      str += COLOR_TO_FACE[color] || "U";
+    for (const colour of tiles) {
+      const letter = colourToLetter[colour];
+      if (!letter) {
+        console.error(`No letter for colour: ${colour}`);
+        return null;
+      }
+      str += letter;
     }
   }
   return str;
@@ -50,7 +68,12 @@ function buildCubeString(faceColors) {
 
 async function solveCube(faceColors) {
   const cubeStr = buildCubeString(faceColors);
+  if (!cubeStr) {
+    console.error("Invalid cube string — colour mapping failed");
+    return null;
+  }
   console.log("Cube string:", cubeStr);
+  console.log("Length:", cubeStr.length);
   try {
     const { solve } = await import("kociemba-wasm");
     const result = await solve(cubeStr);
