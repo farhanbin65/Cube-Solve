@@ -34,7 +34,7 @@ const NEIGHBOURS = {
   U: { top: "blue",   bottom: "green",  left: "orange", right: "red"   },
   F: { top: "white",  bottom: "yellow", left: "orange", right: "red"   },
   D: { top: "green",  bottom: "blue",   left: "orange", right: "red"   },
-  B: { top: "white",  bottom: "yellow", left: "orange", right: "red"   },
+  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"   },
   L: { top: "white",  bottom: "yellow", left: "blue",   right: "green" },
   R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"  },
 };
@@ -110,18 +110,24 @@ export default function ReviewScreen() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleTileClick = (faceKey, cellIndex, e) => {
-    e.stopPropagation();
-    setCentreWarn(false);
-    if (selectedFace === faceKey && selectedCell === cellIndex) {
-      setSelectedFace(null);
-      setSelectedCell(null);
-    } else {
-      setSelectedFace(faceKey);
-      setSelectedCell(cellIndex);
-      if (cellIndex === CENTRE_INDEX) setCentreWarn(true);
-    }
-  };
+const handleTileClick = (faceKey, cellIndex, e) => {
+  e.stopPropagation();
+  setCentreWarn(false);
+  // Centres are locked — forced from known cube layout
+  if (cellIndex === CENTRE_INDEX) {
+    setCentreWarn(true);
+    setSelectedFace(null);
+    setSelectedCell(null);
+    return;
+  }
+  if (selectedFace === faceKey && selectedCell === cellIndex) {
+    setSelectedFace(null);
+    setSelectedCell(null);
+  } else {
+    setSelectedFace(faceKey);
+    setSelectedCell(cellIndex);
+  }
+};
 
   const handleColorPick = (colorName) => {
     if (selectedFace === null || selectedCell === null) return;

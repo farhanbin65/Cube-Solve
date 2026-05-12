@@ -114,6 +114,22 @@ export default function CaptureScreen() {
     return colors;
   };
 
+  // Force correct centre colour — override index 4 with known face centre
+  const FACE_CENTRES = {
+    U: "white",
+    R: "red",
+    F: "green",
+    D: "yellow",
+    L: "orange",
+    B: "blue",
+  };
+
+  const forceCorrectCentre = (colors, faceKey) => {
+    const fixed = [...colors];
+    fixed[4] = FACE_CENTRES[faceKey];
+    return fixed;
+  };
+
   // ── Capture ────────────────────────────────────────────
 
   const captureFrame = () => {
@@ -127,11 +143,12 @@ export default function CaptureScreen() {
     ctx.drawImage(video, 0, 0);
 
     const imageData = canvas.toDataURL("image/jpeg", 0.9);
-    const colors    = extractColors(canvas);
-    const faceKey   = currentFace.key;
+  const colors = extractColors(canvas);
+  const fixedColors = forceCorrectCentre(colors, currentFace.key);
+  const faceKey = currentFace.key;
 
     setCapturedFaces((p) => ({ ...p, [faceKey]: imageData }));
-    setFaceColors((p)    => ({ ...p, [faceKey]: colors }));
+  setFaceColors((p) => ({ ...p, [faceKey]: fixedColors }));
 
     // Flash feedback
     setCaptured(true);
@@ -143,7 +160,7 @@ export default function CaptureScreen() {
       // All 6 faces captured — save to sessionStorage and go to review
       stopCamera();
       sessionStorage.setItem("cube_faces",  JSON.stringify({ ...capturedFaces, [faceKey]: imageData }));
-      sessionStorage.setItem("cube_colors", JSON.stringify({ ...faceColors,    [faceKey]: colors }));
+      sessionStorage.setItem("cube_colors", JSON.stringify({ ...faceColors,    [faceKey]: fixedColors }));
       navigate("/review");
     }
   };
