@@ -30,14 +30,13 @@ const FACE_CENTRES = {
   B: "blue",
 };
 
-// Neighbour centres for each face: top, bottom, left, right
 const NEIGHBOURS = {
-  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"    },
-  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
-  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"    },
-  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"    },
-  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
-  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
+  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"   },
+  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"   },
+  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"   },
+  B: { top: "yellow", bottom: "white",  left: "red",    right: "orange"},
+  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green" },
+  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"  },
 };
 
 // ── Validation ─────────────────────────────────────────────
@@ -57,12 +56,11 @@ function validateCube(faceColors) {
     if (count > 9) errors.push(`Too many ${color} (${count}/9)`);
   }
 
-  for (const face of FACES) {
-    const tiles = faceColors[face.key] || [];
-    const centre = tiles[CENTRE_INDEX];
-    if (centre && centre !== FACE_CENTRES[face.key]) {
-      errors.push(`${face.label} centre must be ${FACE_CENTRES[face.key]}`);
-    }
+  // Check all 6 centres are unique
+  const centreColors = FACES.map(f => faceColors[f.key]?.[CENTRE_INDEX]);
+  const uniqueCentres = new Set(centreColors);
+  if (uniqueCentres.size < 6) {
+    errors.push("Each face must have a unique centre colour");
   }
 
   return errors;
@@ -92,7 +90,8 @@ export default function ReviewScreen() {
 
   const [selectedFace, setSelectedFace] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
-  const [errors, setErrors]             = useState([]);
+  const [errors,       setErrors]       = useState([]);
+  const [centreWarn,   setCentreWarn]   = useState(false);
 
   useEffect(() => {
     setErrors(validateCube(faceColors));
@@ -104,6 +103,7 @@ export default function ReviewScreen() {
       if (pickerRef.current && !pickerRef.current.contains(e.target)) {
         setSelectedFace(null);
         setSelectedCell(null);
+        setCentreWarn(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -112,24 +112,39 @@ export default function ReviewScreen() {
 
   const handleTileClick = (faceKey, cellIndex, e) => {
     e.stopPropagation();
-    if (cellIndex === CENTRE_INDEX) return;
+    setCentreWarn(false);
     if (selectedFace === faceKey && selectedCell === cellIndex) {
       setSelectedFace(null);
       setSelectedCell(null);
     } else {
       setSelectedFace(faceKey);
       setSelectedCell(cellIndex);
+      if (cellIndex === CENTRE_INDEX) setCentreWarn(true);
     }
   };
 
   const handleColorPick = (colorName) => {
     if (selectedFace === null || selectedCell === null) return;
+
+    // If changing a centre, block duplicate centre colours
+    if (selectedCell === CENTRE_INDEX) {
+      const duplicate = FACES.some(
+        f => f.key !== selectedFace &&
+        faceColors[f.key]?.[CENTRE_INDEX] === colorName
+      );
+      if (duplicate) {
+        setCentreWarn(true);
+        return;
+      }
+    }
+
     const newColors = { ...faceColors };
     newColors[selectedFace] = [...newColors[selectedFace]];
     newColors[selectedFace][selectedCell] = colorName;
     setFaceColors(newColors);
     setSelectedFace(null);
     setSelectedCell(null);
+    setCentreWarn(false);
   };
 
   const handleConfirm = () => {
@@ -144,10 +159,12 @@ export default function ReviewScreen() {
     navigate("/capture");
   };
 
-  const isValid = errors.length === 0;
+  const isValid        = errors.length === 0;
+  const isCentreSelected = selectedCell === CENTRE_INDEX;
 
   return (
     <div style={s.root}>
+
       {/* Header */}
       <div style={s.header}>
         <span style={s.stepTag}>Step 02 · Verification</span>
@@ -156,10 +173,10 @@ export default function ReviewScreen() {
       <h2 style={s.title}>Verify mapping</h2>
       <p style={s.subtitle}>
         Tap any tile to correct its color.
-        <span style={s.lockNote}> 🔒 Centres are fixed.</span>
+        <span style={s.lockNote}> Centre tiles can be edited if wrongly detected.</span>
       </p>
 
-      {/* Live errors — never block, just inform */}
+      {/* Live errors */}
       {errors.length > 0 && (
         <div style={s.errorBox}>
           <span style={s.errorIcon}>⚠</span>
@@ -204,12 +221,25 @@ export default function ReviewScreen() {
         )}
       </div>
 
-      {/* Spacer so content doesn't hide behind sticky elements */}
-      <div style={{ height: 140 }} />
+      {/* Spacer for sticky bottom */}
+      <div style={{ height: 160 }} />
 
-      {/* ── Sticky bottom area ── */}
+      {/* ── Sticky bottom ── */}
       <div style={s.stickyBottom} ref={pickerRef}>
-        {/* Colour picker tray — always visible */}
+
+        {/* Centre warning */}
+        {isCentreSelected && (
+          <div style={s.centreWarning}>
+            <span style={s.centreWarningIcon}>🔒</span>
+            <span style={s.centreWarningText}>
+              {centreWarn
+                ? "That colour is already used as another centre"
+                : "Editing centre tile — each face needs a unique centre colour"}
+            </span>
+          </div>
+        )}
+
+        {/* Colour picker tray */}
         <div style={s.pickerTray}>
           <span style={s.pickerLabel}>
             {selectedFace !== null
@@ -221,20 +251,34 @@ export default function ReviewScreen() {
               const isSelected =
                 selectedFace !== null &&
                 faceColors[selectedFace]?.[selectedCell] === name;
+
+              // Grey out colours already used as centres when editing a centre
+              const isCentreConflict =
+                isCentreSelected &&
+                FACES.some(
+                  f => f.key !== selectedFace &&
+                  faceColors[f.key]?.[CENTRE_INDEX] === name
+                );
+
               return (
                 <button
                   key={name}
                   style={{
                     ...s.pickerSwatch,
                     background: hex,
-                    outline: isSelected ? "3px solid #fff" : "none",
+                    outline:    isSelected ? "3px solid #fff" : "none",
                     outlineOffset: 2,
-                    opacity: selectedFace === null ? 0.4 : 1,
-                    transform: isSelected ? "scale(1.15)" : "scale(1)",
+                    opacity:    selectedFace === null
+                      ? 0.4
+                      : isCentreConflict
+                      ? 0.2
+                      : 1,
+                    transform:  isSelected ? "scale(1.15)" : "scale(1)",
+                    cursor:     isCentreConflict ? "not-allowed" : "pointer",
                   }}
                   onClick={() => handleColorPick(name)}
                   disabled={selectedFace === null}
-                  title={name}
+                  title={isCentreConflict ? "Already used as a centre" : name}
                 />
               );
             })}
@@ -250,7 +294,7 @@ export default function ReviewScreen() {
             style={{
               ...s.primaryBtn,
               opacity: isValid ? 1 : 0.35,
-              cursor: isValid ? "pointer" : "not-allowed",
+              cursor:  isValid ? "pointer" : "not-allowed",
             }}
             onClick={handleConfirm}
             disabled={!isValid}
@@ -263,12 +307,13 @@ export default function ReviewScreen() {
   );
 }
 
-// ── Face Card with Neighbour Strips ────────────────────────
+// ── Face Card ──────────────────────────────────────────────
 
 function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
   return (
     <div style={s.faceCardOuter}>
-      {/* Top neighbour strip */}
+
+      {/* Top neighbour */}
       <div style={s.neighbourRow}>
         <div style={{
           ...s.neighbourStrip,
@@ -278,14 +323,15 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
       </div>
 
       <div style={s.faceCardMiddle}>
-        {/* Left neighbour strip */}
+
+        {/* Left neighbour */}
         <div style={{
           ...s.neighbourStrip,
           ...s.neighbourSide,
           background: COLOR_MAP[neighbours.left],
         }} />
 
-        {/* Face card */}
+        {/* Face */}
         <div style={s.faceCard}>
           <div style={s.faceCardHeader}>
             <span style={s.faceCardLabel}>{face.label}</span>
@@ -301,20 +347,18 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
                   onClick={(e) => onTileClick(ci, e)}
                   style={{
                     ...s.tile,
-                    background: COLOR_MAP[colorName] || "#333",
-                    cursor: isCentre ? "default" : "pointer",
-                    outline: isSelected
-                      ? "2.5px solid #fff"
-                      : "none",
+                    background:  COLOR_MAP[colorName] || "#333",
+                    cursor:      "pointer",
+                    outline:     isSelected ? "2.5px solid #fff" : "none",
                     outlineOffset: 1,
-                    boxShadow: isSelected
+                    boxShadow:   isSelected
                       ? "0 0 0 1px rgba(0,0,0,0.5)"
                       : "none",
                   }}
                 >
                   {isCentre && (
                     <div style={s.lockBadge}>
-                      <LockIcon />
+                      {isSelected ? <UnlockIcon /> : <LockIcon />}
                     </div>
                   )}
                 </div>
@@ -323,15 +367,16 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
           </div>
         </div>
 
-        {/* Right neighbour strip */}
+        {/* Right neighbour */}
         <div style={{
           ...s.neighbourStrip,
           ...s.neighbourSide,
           background: COLOR_MAP[neighbours.right],
         }} />
+
       </div>
 
-      {/* Bottom neighbour strip */}
+      {/* Bottom neighbour */}
       <div style={s.neighbourRow}>
         <div style={{
           ...s.neighbourStrip,
@@ -339,6 +384,7 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
           background: COLOR_MAP[neighbours.bottom],
         }} />
       </div>
+
     </div>
   );
 }
@@ -352,6 +398,17 @@ function LockIcon() {
       strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function UnlockIcon() {
+  return (
+    <svg width="7" height="7" viewBox="0 0 24 24" fill="none"
+      stroke="rgba(0,0,0,0.6)" strokeWidth="3"
+      strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
     </svg>
   );
 }
@@ -388,6 +445,7 @@ const s = {
     color: "#475569",
     fontSize: 13,
     margin: 0,
+    lineHeight: 1.5,
   },
   lockNote: {
     color: "#334155",
@@ -424,12 +482,10 @@ const s = {
     gridTemplateColumns: "1fr 1fr",
     gap: 16,
   },
-  // Face card with neighbour strips
   faceCardOuter: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 0,
   },
   neighbourRow: {
     width: "100%",
@@ -442,7 +498,6 @@ const s = {
     display: "flex",
     alignItems: "stretch",
     width: "100%",
-    gap: 0,
   },
   neighbourStrip: {
     borderRadius: 2,
@@ -495,7 +550,7 @@ const s = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "outline 0.1s, transform 0.1s",
+    transition: "outline 0.1s",
   },
   lockBadge: {
     display: "flex",
@@ -528,7 +583,6 @@ const s = {
     borderRadius: "50%",
     flexShrink: 0,
   },
-  // Sticky bottom
   stickyBottom: {
     position: "fixed",
     bottom: 64,
@@ -538,11 +592,30 @@ const s = {
     maxWidth: 480,
     background: "#0a0a0f",
     borderTop: "1px solid rgba(255,255,255,0.06)",
-    padding: "12px 20px 16px",
+    padding: "10px 20px 16px",
     display: "flex",
     flexDirection: "column",
     gap: 10,
     zIndex: 20,
+  },
+  centreWarning: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "rgba(251,191,36,0.07)",
+    border: "1px solid rgba(251,191,36,0.15)",
+    borderRadius: 8,
+    padding: "7px 10px",
+  },
+  centreWarningIcon: {
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  centreWarningText: {
+    color: "#fbbf24",
+    fontSize: 11,
+    fontWeight: 500,
+    lineHeight: 1.4,
   },
   pickerTray: {
     display: "flex",
