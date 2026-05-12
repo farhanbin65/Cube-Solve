@@ -9,12 +9,12 @@ const FACE_COLORS = {
 
 // Neighbour centres: top, bottom, left, right
 const NEIGHBOURS = {
-  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"   },
-  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"   },
-  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"   },
-  B: { top: "yellow", bottom: "white",  left: "orange", right: "red" },
-  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green" },
-  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"  },
+  U: { top: "red",    bottom: "orange", left: "blue",   right: "green"  },
+  D: { top: "orange", bottom: "red",    left: "blue",   right: "green"  },
+  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
+  B: { top: "white",  bottom: "yellow", left: "red",    right: "orange" },
+  L: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
+  R: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
 };
 
 // Which face each move belongs to + direction

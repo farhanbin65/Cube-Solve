@@ -37,32 +37,39 @@ const COLOR_TO_FACE = {
 };
 
 function buildCubeString(faceColors) {
-  // kociemba order: U R F D L B
   const order = ["U", "R", "F", "D", "L", "B"];
-
-  // Dynamically determine face letter from centre tile colour
-  // The centre tile (index 4) defines which face letter to use
   const colourToLetter = {};
   for (const face of order) {
     const tiles = faceColors[face] || [];
     const centreColour = tiles[4];
-    colourToLetter[centreColour] = face;
+    if (centreColour && centreColour !== "unknown") {
+      colourToLetter[centreColour] = face;
+    }
   }
 
   console.log("Colour to letter map:", colourToLetter);
 
   let str = "";
+  let skipped = 0;
   for (const face of order) {
     const tiles = faceColors[face] || [];
-    for (const colour of tiles) {
+    console.log(`Face ${face} has ${tiles.length} tiles:`, tiles);
+    for (let i = 0; i < 9; i++) {
+      const colour = tiles[i];
       const letter = colourToLetter[colour];
       if (!letter) {
-        console.error(`No letter for colour: ${colour}`);
-        return null;
+        console.error(`No letter for colour: "${colour}" on face ${face} tile ${i}`);
+        skipped++;
+        str += face;
+      } else {
+        str += letter;
       }
-      str += letter;
     }
   }
+
+  console.log("Cube string:", str);
+  console.log("Length:", str.length);
+  console.log("Skipped:", skipped);
   return str;
 }
 

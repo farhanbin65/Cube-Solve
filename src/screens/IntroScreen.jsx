@@ -45,11 +45,21 @@ export default function IntroScreen() {
 
       {/* CTA */}
       <div style={s.ctaWrapper}>
-        <button style={s.ctaBtn} onClick={() => navigate("/capture")}>
-          Begin calibration
-          <ArrowIcon />
+        <button style={s.primaryBtn} onClick={() => {
+          if (window.axisTimer) window.axisTimer.start();
+          navigate("/capture");
+        }}>
+          📷 Scan with camera
         </button>
-        <span style={s.ctaHint}>Camera access required</span>
+        <button style={s.secondaryBtn} onClick={() => {
+          sessionStorage.removeItem("cube_colors");
+          sessionStorage.removeItem("cube_faces");
+          if (window.axisTimer) window.axisTimer.start();
+          navigate("/review");
+        }}>
+          ✏️ Enter manually
+        </button>
+        <span style={s.ctaHint}>Camera access required for scanning</span>
       </div>
     </div>
   );
@@ -82,15 +92,6 @@ function CubeGraphic() {
       <line x1="40" y1="61.3" x2="68" y2="45.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
       <line x1="49.3" y1="34.7" x2="49.3" y2="66.7" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
       <line x1="58.7" y1="29.3" x2="58.7" y2="61.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
     </svg>
   );
 }
@@ -178,20 +179,27 @@ const s = {
     gap: 10,
     marginTop: "auto",
   },
-  ctaBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: "16px 24px",
+  primaryBtn: {
+    width: "100%",
+    padding: "14px 24px",
     background: "#e2e8f0",
     color: "#0a0a0f",
     border: "none",
     borderRadius: 12,
     fontSize: 15,
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: "pointer",
-    letterSpacing: "0.01em",
+  },
+  secondaryBtn: {
+    width: "100%",
+    padding: "14px 24px",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    color: "#94a3b8",
+    fontWeight: 600,
+    fontSize: 15,
+    cursor: "pointer",
   },
   ctaHint: {
     textAlign: "center",

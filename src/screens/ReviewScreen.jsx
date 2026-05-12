@@ -17,6 +17,7 @@ const COLOR_MAP = {
   orange: "#ff6420",
   green:  "#1e7a3c",
   blue:   "#1e50b4",
+  unknown: "#1e293b",
 };
 
 const CENTRE_INDEX = 4;
@@ -31,18 +32,31 @@ const FACE_CENTRES = {
 };
 
 const NEIGHBOURS = {
-  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"   },
-  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"   },
-  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"   },
-  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"   },
-  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green" },
-  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"  },
+  U: { top: "red",    bottom: "orange", left: "blue",   right: "green"  },
+  D: { top: "orange", bottom: "red",    left: "blue",   right: "green"  },
+  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
+  B: { top: "white",  bottom: "yellow", left: "red",    right: "orange" },
+  L: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
+  R: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
 };
-
 // ── Validation ─────────────────────────────────────────────
 
 function validateCube(faceColors) {
   const errors = [];
+
+  // Check for unknown tiles first
+  let unknownCount = 0;
+  for (const face of FACES) {
+    const tiles = faceColors[face.key] || [];
+    for (let i = 0; i < 9; i++) {
+      if (i === CENTRE_INDEX) continue;
+      if (!tiles[i] || tiles[i] === "unknown") unknownCount++;
+    }
+  }
+  if (unknownCount > 0) {
+    errors.push(`${unknownCount} tile${unknownCount > 1 ? "s" : ""} not set yet`);
+    return errors;
+  }
 
   const counts = { white: 0, yellow: 0, red: 0, orange: 0, green: 0, blue: 0 };
   for (const face of FACES) {
@@ -56,7 +70,6 @@ function validateCube(faceColors) {
     if (count > 9) errors.push(`Too many ${color} (${count}/9)`);
   }
 
-  // Check all 6 centres are unique
   const centreColors = FACES.map(f => faceColors[f.key]?.[CENTRE_INDEX]);
   const uniqueCentres = new Set(centreColors);
   if (uniqueCentres.size < 6) {
@@ -69,7 +82,9 @@ function validateCube(faceColors) {
 function buildDefaultColors() {
   const result = {};
   for (const face of FACES) {
-    result[face.key] = Array(9).fill(FACE_CENTRES[face.key]);
+    // Fill all 9 with unknown, then set centre correctly
+    result[face.key] = Array(9).fill("unknown");
+    result[face.key][4] = FACE_CENTRES[face.key];
   }
   return result;
 }
@@ -353,12 +368,14 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
                   onClick={(e) => onTileClick(ci, e)}
                   style={{
                     ...s.tile,
-                    background:  COLOR_MAP[colorName] || "#333",
+                    background:  colorName === "unknown"
+                      ? "#0f172a"
+                      : COLOR_MAP[colorName] || "#333",
                     cursor:      "pointer",
                     outline:     isSelected ? "2.5px solid #fff" : "none",
                     outlineOffset: 1,
-                    boxShadow:   isSelected
-                      ? "0 0 0 1px rgba(0,0,0,0.5)"
+                    border: colorName === "unknown"
+                      ? "1px dashed #334155"
                       : "none",
                   }}
                 >
@@ -366,6 +383,14 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
                     <div style={s.lockBadge}>
                       {isSelected ? <UnlockIcon /> : <LockIcon />}
                     </div>
+                  )}
+                  {colorName === "unknown" && !isCentre && (
+                    <div style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: "#334155",
+                    }} />
                   )}
                 </div>
               );

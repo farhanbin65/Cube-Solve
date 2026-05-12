@@ -58,35 +58,96 @@ export default function CaptureScreen() {
 
   // ── Colour Detection ───────────────────────────────────
 
-  const sampleColor = (ctx, cx, cy, radius = 8) => {
+  const sampleColor = (ctx, cx, cy, radius = 12) => {
     let r = 0, g = 0, b = 0, count = 0;
     for (let dy = -radius; dy <= radius; dy += 2) {
       for (let dx = -radius; dx <= radius; dx += 2) {
-        const px = ctx.getImageData(cx + dx, cy + dy, 1, 1).data;
-        r += px[0]; g += px[1]; b += px[2]; count++;
+        // Only sample within circle
+        if (dx * dx + dy * dy > radius * radius) continue;
+        try {
+          const px = ctx.getImageData(
+            Math.max(0, cx + dx),
+            Math.max(0, cy + dy),
+            1, 1
+          ).data;
+          r += px[0]; g += px[1]; b += px[2]; count++;
+        } catch {}
       }
     }
+    if (count === 0) return [128, 128, 128];
     return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
   };
 
   const COLOR_REFS = [
-    { name: "white",  rgb: [240, 240, 235] },
-    { name: "yellow", rgb: [255, 215,   0] },
-    { name: "red",    rgb: [210,  40,  40] },
-    { name: "orange", rgb: [255, 100,  30] },
-    { name: "green",  rgb: [ 30, 130,  60] },
-    { name: "blue",   rgb: [ 30,  80, 180] },
+    // Multiple sample points per colour to handle different lighting
+    { name: "white",  rgb: [230, 230, 220] },
+    { name: "white",  rgb: [210, 210, 200] },
+    { name: "white",  rgb: [245, 245, 240] },
+    { name: "yellow", rgb: [255, 213,   0] },
+    { name: "yellow", rgb: [240, 200,   0] },
+    { name: "yellow", rgb: [255, 230,  30] },
+    { name: "red",    rgb: [180,  20,  20] },
+    { name: "red",    rgb: [200,  30,  30] },
+    { name: "red",    rgb: [220,  50,  50] },
+    { name: "orange", rgb: [220,  80,   0] },
+    { name: "orange", rgb: [240, 100,  20] },
+    { name: "orange", rgb: [255, 120,  30] },
+    { name: "green",  rgb: [  0, 120,  40] },
+    { name: "green",  rgb: [ 20, 100,  30] },
+    { name: "green",  rgb: [  0, 150,  50] },
+    { name: "blue",   rgb: [  0,  50, 180] },
+    { name: "blue",   rgb: [ 20,  70, 160] },
+    { name: "blue",   rgb: [  0,  80, 200] },
   ];
 
-  const detectColor = (r, g, b) => {
-    let best = COLOR_REFS[0], bestDist = Infinity;
+  function detectColor(r, g, b) {
+    // Normalize brightness first
+    const brightness = (r + g + b) / 3;
+    const scale = brightness > 0 ? 128 / brightness : 1;
+    const nr = Math.min(255, r * scale);
+    const ng = Math.min(255, g * scale);
+    const nb = Math.min(255, b * scale);
+
+    // Use both raw and normalized for matching
+    let bestName = "white";
+    let bestDist = Infinity;
+
     for (const ref of COLOR_REFS) {
-      const d = Math.sqrt(
+      // Raw distance
+      const rawDist = Math.sqrt(
         (r - ref.rgb[0]) ** 2 + (g - ref.rgb[1]) ** 2 + (b - ref.rgb[2]) ** 2
       );
-      if (d < bestDist) { bestDist = d; best = ref; }
+      if (rawDist < bestDist) {
+        bestDist = rawDist;
+        bestName = ref.name;
+      }
     }
-    return best.name;
+
+    // Heuristic overrides for common misdetections
+    // If it looks greyish/whitish
+    const maxChannel = Math.max(r, g, b);
+    const minChannel = Math.min(r, g, b);
+    const saturation = maxChannel > 0 ? (maxChannel - minChannel) / maxChannel : 0;
+
+    if (saturation < 0.15 && brightness > 140) return "white";
+    if (saturation < 0.15 && brightness <= 140) return "white"; // dark white still white
+
+    // Strong green detection
+    if (g > r * 1.4 && g > b * 1.4 && g > 80) return "green";
+
+    // Strong blue detection
+    if (b > r * 1.5 && b > g * 1.2 && b > 60) return "blue";
+
+    // Strong red detection
+    if (r > g * 1.8 && r > b * 1.8) return "red";
+
+    // Orange vs red: orange has significant green channel
+    if (r > 150 && g > 60 && g < 140 && b < 60) return "orange";
+
+    // Yellow: high red + high green, low blue
+    if (r > 180 && g > 160 && b < 80) return "yellow";
+
+    return bestName;
   };
 
   const extractColors = (canvas) => {
