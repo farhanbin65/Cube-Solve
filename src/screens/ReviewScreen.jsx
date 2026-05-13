@@ -51,9 +51,6 @@ const NEIGHBOURS = {
 // ── Validation ─────────────────────────────────────────────
 
 function validateCube(faceColors) {
-  // TEMPORARY: Allow testing with any state
-  return [];
-
   const errors = [];
 
   // Check for unknown tiles first
@@ -160,22 +157,7 @@ function fillSolvedCube() {
   sessionStorage.setItem("cube_colors", JSON.stringify(newColors));
 }
 
-// Fill with L' U' scramble (standard orientation)
-function fillScrambleLU() {
-  // L' U' scramble, manually computed. B-face stored with Yellow on top
-  // (as the user sees it per hold instructions).
-  // buildCubeString will flip B back to standard for the solver.
-  const scrambleColors = {
-    U: ["white","white","white", "white","white","white", "blue","blue","blue"],
-    F: ["orange","orange","orange", "white","green","green", "white","green","green"],
-    R: ["white","green","green", "red","red","red", "red","red","red"],
-    B: ["blue","blue","yellow", "blue","blue","yellow", "red","red","red"],
-    L: ["blue","blue","yellow", "orange","orange","orange", "orange","orange","orange"],
-    D: ["green","yellow","yellow", "green","yellow","yellow", "green","yellow","yellow"],
-  };
-  setFaceColors(scrambleColors);
-  sessionStorage.setItem("cube_colors", JSON.stringify(scrambleColors));
-}
+
 
 const handleTileClick = (faceKey, cellIndex, e) => {
   e.stopPropagation();
@@ -364,9 +346,6 @@ const handleTileClick = (faceKey, cellIndex, e) => {
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <button style={s.debugBtn} onClick={fillSolvedCube}>
             🧊 Solved cube
-          </button>
-          <button style={s.debugBtn} onClick={fillScrambleLU}>
-            🔀 L' U'
           </button>
         </div>
 

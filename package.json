@@ -12,10 +12,13 @@
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "cube-solver": "^2.4.1",
+    "cubing": "^0.63.3",
     "kociemba-wasm": "^1.0.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.15.0"
+    "react-router-dom": "^7.15.0",
+    "rubiks-cube-solver": "^1.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
