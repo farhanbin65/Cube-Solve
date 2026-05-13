@@ -13,8 +13,8 @@ const NEIGHBOURS = {
   D: { top: "orange", bottom: "red",    left: "blue",   right: "green"  },
   F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
   B: { top: "white",  bottom: "yellow", left: "red",    right: "orange" },
-  L: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
-  R: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
+  L: { top: "yellow", bottom: "white",  left: "green",  right: "blue"   },
+  R: { top: "yellow", bottom: "white",  left: "blue",   right: "green"  },
 };
 
 // Which face each move belongs to + direction
