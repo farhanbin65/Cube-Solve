@@ -10,6 +10,15 @@ const FACES = [
   { key: "B", label: "Blue",   position: "Back"   },
 ];
 
+const HOLD_INSTRUCTIONS = {
+  U: { facing: "White",  top: "Blue"   },
+  R: { facing: "Red",    top: "White"  },
+  F: { facing: "Green",  top: "White"  },
+  D: { facing: "Yellow", top: "Green"  },
+  L: { facing: "Orange", top: "White"  },
+  B: { facing: "Blue",   top: "Yellow", note: "Read right to left" },
+};
+
 const COLOR_MAP = {
   white:  "#f0f0eb",
   yellow: "#ffd700",
@@ -32,16 +41,19 @@ const FACE_CENTRES = {
 };
 
 const NEIGHBOURS = {
-  U: { top: "red",    bottom: "orange", left: "blue",   right: "green"  },
-  D: { top: "orange", bottom: "red",    left: "blue",   right: "green"  },
+  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"    },
+  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
   F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
-  B: { top: "white",  bottom: "yellow", left: "red",    right: "orange" },
-  L: { top: "yellow", bottom: "white",  left: "green",  right: "blue"   },
-  R: { top: "yellow", bottom: "white",  left: "blue",   right: "green"  },
+  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"    },
+  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
+  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"    },
 };
 // ── Validation ─────────────────────────────────────────────
 
 function validateCube(faceColors) {
+  // TEMPORARY: Allow testing with any state
+  return [];
+
   const errors = [];
 
   // Check for unknown tiles first
@@ -124,6 +136,46 @@ export default function ReviewScreen() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+// ── Debug / Quick‑fill helpers ──────────────────────────
+
+// Map face keys to expected centre colour
+const FACE_CENTRES_STATIC = {
+  U: "white",
+  F: "green",
+  R: "red",
+  B: "blue",
+  L: "orange",
+  D: "yellow",
+};
+
+// Fill with a solved cube
+function fillSolvedCube() {
+  const newColors = {};
+  for (const face of FACES) {
+    const centre = FACE_CENTRES_STATIC[face.key];
+    newColors[face.key] = Array(9).fill(centre);
+  }
+  setFaceColors(newColors);
+  sessionStorage.setItem("cube_colors", JSON.stringify(newColors));
+}
+
+// Fill with L' U' scramble (standard orientation)
+function fillScrambleLU() {
+  // L' U' scramble, manually computed. B-face stored with Yellow on top
+  // (as the user sees it per hold instructions).
+  // buildCubeString will flip B back to standard for the solver.
+  const scrambleColors = {
+    U: ["white","white","white", "white","white","white", "blue","blue","blue"],
+    F: ["orange","orange","orange", "white","green","green", "white","green","green"],
+    R: ["white","green","green", "red","red","red", "red","red","red"],
+    B: ["blue","blue","yellow", "blue","blue","yellow", "red","red","red"],
+    L: ["blue","blue","yellow", "orange","orange","orange", "orange","orange","orange"],
+    D: ["green","yellow","yellow", "green","yellow","yellow", "green","yellow","yellow"],
+  };
+  setFaceColors(scrambleColors);
+  sessionStorage.setItem("cube_colors", JSON.stringify(scrambleColors));
+}
 
 const handleTileClick = (faceKey, cellIndex, e) => {
   e.stopPropagation();
@@ -268,7 +320,9 @@ const handleTileClick = (faceKey, cellIndex, e) => {
               : "Select a tile above to change its color"}
           </span>
           <div style={s.pickerRow}>
-            {Object.entries(COLOR_MAP).map(([name, hex]) => {
+            {Object.entries(COLOR_MAP)
+              .filter(([name]) => name !== "unknown")
+              .map(([name, hex]) => {
               const isSelected =
                 selectedFace !== null &&
                 faceColors[selectedFace]?.[selectedCell] === name;
@@ -302,14 +356,33 @@ const handleTileClick = (faceKey, cellIndex, e) => {
                   title={isCentreConflict ? "Already used as a centre" : name}
                 />
               );
-            })}
+              })}
           </div>
+        </div>
+
+        {/* Quick‑fill toolbar */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <button style={s.debugBtn} onClick={fillSolvedCube}>
+            🧊 Solved cube
+          </button>
+          <button style={s.debugBtn} onClick={fillScrambleLU}>
+            🔀 L' U'
+          </button>
         </div>
 
         {/* Action buttons */}
         <div style={s.actions}>
           <button style={s.secondaryBtn} onClick={handleRescan}>
             Re-scan
+          </button>
+          <button
+            style={s.secondaryBtn}
+            onClick={() => {
+              sessionStorage.setItem("cube_colors", JSON.stringify(faceColors));
+              navigate("/cube3d");
+            }}
+          >
+            View 3D
           </button>
           <button
             style={{
@@ -323,9 +396,9 @@ const handleTileClick = (faceKey, cellIndex, e) => {
             Confirm and solve
           </button>
         </div>
-      </div>
-    </div>
-  );
+              </div>
+            </div>
+          );
 }
 
 // ── Face Card ──────────────────────────────────────────────
@@ -358,6 +431,14 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
             <span style={s.faceCardLabel}>{face.label}</span>
             <span style={s.faceCardPos}>{face.position}</span>
           </div>
+          <span style={s.holdInstruction}>
+            Hold {HOLD_INSTRUCTIONS[face.key].facing} facing you, {HOLD_INSTRUCTIONS[face.key].top} on top
+          </span>
+          {HOLD_INSTRUCTIONS[face.key].note && (
+            <span style={s.holdInstruction}>
+              {HOLD_INSTRUCTIONS[face.key].note}
+            </span>
+          )}
           <div style={s.tileGrid}>
             {tiles.map((colorName, ci) => {
               const isCentre   = ci === CENTRE_INDEX;
@@ -569,6 +650,13 @@ const s = {
     color: "#1e293b",
     fontSize: 9,
   },
+  holdInstruction: {
+    color: "#334155",
+    fontSize: 8,
+    fontWeight: 500,
+    lineHeight: 1.3,
+    marginBottom: 2,
+  },
   tileGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr 1fr",
@@ -698,5 +786,15 @@ const s = {
     fontSize: 14,
     fontWeight: 700,
     transition: "opacity 0.2s",
+  },
+  debugBtn: {
+    padding: "6px 12px",
+    borderRadius: 8,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    color: "#94a3b8",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
   },
 };

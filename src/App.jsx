@@ -7,6 +7,7 @@ import SolutionScreen from "./screens/SolutionScreen";
 import SuccessScreen  from "./screens/SuccessScreen";
 import HistoryScreen  from "./screens/HistoryScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import Cube3Dscreen from "./screens/Cube3Dscreen";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Routes>
           <Route path="/"         element={<IntroScreen />} />
           <Route path="/capture"  element={<CaptureScreen />} />
+          <Route path="/cube3d"   element={<Cube3Dscreen />} />
           <Route path="/review"   element={<ReviewScreen />} />
           <Route path="/solution" element={<SolutionScreen />} />
           <Route path="/success"  element={<SuccessScreen />} />

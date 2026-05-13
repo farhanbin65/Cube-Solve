@@ -36,8 +36,19 @@ const COLOR_TO_FACE = {
   blue:   "B",
 };
 
+const MOVE_HOLD = {
+  U: "White facing you · Blue on top",
+  D: "Yellow facing you · Green on top",
+  R: "Red facing you · White on top",
+  L: "Orange facing you · White on top",
+  F: "Green facing you · White on top",
+  B: "Blue facing you · Yellow on top",
+};
+
 function buildCubeString(faceColors) {
-  const order = ["U", "R", "F", "D", "L", "B"];
+  // kociemba-wasm expects: U, F, R, B, L, D
+  const order = ["U", "F", "R", "B", "L", "D"];
+
   const colourToLetter = {};
   for (const face of order) {
     const tiles = faceColors[face] || [];
@@ -47,44 +58,39 @@ function buildCubeString(faceColors) {
     }
   }
 
-  console.log("Colour to letter map:", colourToLetter);
+  if (Object.keys(colourToLetter).length !== 6) {
+    console.error("Missing centre colours:", colourToLetter);
+    return null;
+  }
 
   let str = "";
-  let skipped = 0;
   for (const face of order) {
     const tiles = faceColors[face] || [];
-    console.log(`Face ${face} has ${tiles.length} tiles:`, tiles);
+    // TODO: verify if B face needs orientation fix (likely 180° rotation)
     for (let i = 0; i < 9; i++) {
       const colour = tiles[i];
       const letter = colourToLetter[colour];
       if (!letter) {
-        console.error(`No letter for colour: "${colour}" on face ${face} tile ${i}`);
-        skipped++;
-        str += face;
-      } else {
-        str += letter;
+        console.error(`No mapping for colour "${colour}" on face ${face} at index ${i}`);
+        return null;
       }
+      str += letter;
     }
   }
 
-  console.log("Cube string:", str);
-  console.log("Length:", str.length);
-  console.log("Skipped:", skipped);
+  console.log("Cube string (UFRLBD):", str);
   return str;
 }
 
 async function solveCube(faceColors) {
   const cubeStr = buildCubeString(faceColors);
   if (!cubeStr) {
-    console.error("Invalid cube string — colour mapping failed");
+    console.error("buildCubeString failed");
     return null;
   }
-  console.log("Cube string:", cubeStr);
-  console.log("Length:", cubeStr.length);
   try {
     const { solve } = await import("kociemba-wasm");
     const result = await solve(cubeStr);
-    console.log("Solution:", result);
     if (!result || result.trim() === "") return [];
     return result.trim().split(" ").filter(Boolean);
   } catch (e) {
@@ -383,6 +389,9 @@ export default function SolutionScreen() {
                   >
                     {m}
                   </span>
+                  <span style={{ color: "#1e293b", fontSize: 8, textAlign: "center", lineHeight: 1.3 }}>
+                    {MOVE_HOLD[m?.[0]] || ""}
+                  </span>
                 </div>
               );
             })}
@@ -396,6 +405,9 @@ export default function SolutionScreen() {
           <MoveDiagram move={move} size="lg" />
           <div style={s.moveNotation}>{move}</div>
           <div style={s.moveDesc}>{info.desc}</div>
+          <div style={s.holdInstruction}>
+            {MOVE_HOLD[move?.[0]] || ""}
+          </div>
         </div>
       )}
 
@@ -779,6 +791,13 @@ const s = {
     fontSize: 13,
     fontWeight: 400,
     textAlign: "center",
+  },
+  holdInstruction: {
+    color: "#334155",
+    fontSize: 11,
+    fontWeight: 500,
+    textAlign: "center",
+    marginTop: 2,
   },
   progressBarTrack: {
     height: 2,

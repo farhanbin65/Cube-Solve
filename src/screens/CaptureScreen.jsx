@@ -10,6 +10,15 @@ const FACES = [
   { key: "B", label: "Blue",  position: "Back" },
 ];
 
+const HOLD_INSTRUCTIONS = {
+  U: "Hold White facing camera, Blue on top",
+  R: "Hold Red facing camera, White on top",
+  F: "Hold Green facing camera, White on top",
+  D: "Hold Yellow facing camera, Green on top",
+  L: "Hold Orange facing camera, White on top",
+  B: "Hold Blue facing camera, Yellow on top — read right to left",
+};
+
 export default function CaptureScreen() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -301,7 +310,7 @@ export default function CaptureScreen() {
 
       {/* Hint */}
       <p style={s.hint}>
-        Align the <strong style={{ color: "#e2e8f0" }}>{currentFace.label}</strong> face inside the grid
+        {HOLD_INSTRUCTIONS[currentFace.key]}
       </p>
 
       {/* Controls */}
