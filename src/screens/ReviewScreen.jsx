@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { faceColorsToString } from "../utils/cubeState";
 
 const FACES = [
   { key: "U", label: "White",  position: "Up"    },
@@ -203,8 +204,15 @@ const handleTileClick = (faceKey, cellIndex, e) => {
   };
 
   const handleConfirm = () => {
-    sessionStorage.setItem("cube_colors", JSON.stringify(faceColors));
-    navigate("/solution");
+    const confirmedFaceColors = faceColors;
+    const cubeStr = faceColorsToString(confirmedFaceColors);
+    if (!cubeStr) {
+      alert("Invalid cube — check your colours");
+      return;
+    }
+
+    sessionStorage.setItem("cube_colors", JSON.stringify(confirmedFaceColors));
+    navigate("/cube3d", { state: { faceColors: confirmedFaceColors } });
   };
 
   const handleRescan = () => {
@@ -357,8 +365,14 @@ const handleTileClick = (faceKey, cellIndex, e) => {
           <button
             style={s.secondaryBtn}
             onClick={() => {
-              sessionStorage.setItem("cube_colors", JSON.stringify(faceColors));
-              navigate("/cube3d");
+              const confirmedFaceColors = faceColors;
+              const cubeStr = faceColorsToString(confirmedFaceColors);
+              if (!cubeStr) {
+                alert("Invalid cube — check your colours");
+                return;
+              }
+              sessionStorage.setItem("cube_colors", JSON.stringify(confirmedFaceColors));
+              navigate("/cube3d", { state: { faceColors: confirmedFaceColors } });
             }}
           >
             View 3D

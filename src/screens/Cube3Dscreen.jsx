@@ -1,28 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Cube3D from "../components/Cube3D";
-import { createStateTracker, buildSolved, applyMoveToState } from "../utils/cubeState";
+import { createStateTracker, buildSolved } from "../utils/cubeState";
 import { solveCube } from "../utils/cubeSolver";
 
-const MOVE_DEF = {
-  "U":"U","U'":"U'","U2":"U2",
-  "D":"D","D'":"D'","D2":"D2",
-  "R":"R","R'":"R'","R2":"R2",
-  "L":"L","L'":"L'","L2":"L2",
-  "F":"F","F'":"F'","F2":"F2",
-  "B":"B","B'":"B'","B2":"B2",
-};
-
-const FACE_CENTRES = {
-  U:"white", R:"red", F:"green",
-  D:"yellow", L:"orange", B:"blue",
-};
-
-function buildDefaultColors() {
-  const r = {};
-  for (const k of Object.keys(FACE_CENTRES)) r[k] = Array(9).fill(FACE_CENTRES[k]);
-  return r;
-}
+const ALL_MOVES = ["U","U'","U2","D","D'","D2","R","R'","R2","L","L'","L2","F","F'","F2","B","B'","B2"];
 
 const MOVE_GROUPS = [
   { label:"U", moves:["U","U'","U2"] },
@@ -44,10 +26,11 @@ function Toast({ toasts }) {
   return (
     <div style={ts.container}>
       {toasts.map(t => (
-        <div key={t.id} style={{ ...ts.toast, ...(t.type === "error" ? ts.error : t.type === "success" ? ts.success : ts.info) }}>
-          <span style={ts.icon}>
-            {t.type === "error" ? "✕" : t.type === "success" ? "✓" : "ℹ"}
-          </span>
+        <div key={t.id} style={{
+          ...ts.toast,
+          ...(t.type === "error" ? ts.error : t.type === "success" ? ts.success : ts.info)
+        }}>
+          <span style={ts.icon}>{t.type==="error"?"✕":t.type==="success"?"✓":"ℹ"}</span>
           {t.message}
         </div>
       ))}
@@ -56,186 +39,172 @@ function Toast({ toasts }) {
 }
 
 const ts = {
-  container: {
-    position: "fixed", top: 60, left: "50%", transform: "translateX(-50%)",
-    display: "flex", flexDirection: "column", gap: 8,
-    zIndex: 999, pointerEvents: "none", width: "calc(100% - 40px)", maxWidth: 440,
-  },
-  toast: {
-    display: "flex", alignItems: "center", gap: 10,
-    padding: "12px 16px", borderRadius: 12,
-    fontSize: 13, fontWeight: 600,
-    backdropFilter: "blur(12px)",
-    animation: "slideDown 0.25s ease",
-    boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-  },
-  success: { background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", color: "#4ade80" },
-  error:   { background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.3)", color: "#f87171" },
-  info:    { background: "rgba(148,163,184,0.12)", border: "1px solid rgba(148,163,184,0.2)", color: "#94a3b8" },
-  icon:    { fontSize: 14, fontWeight: 800, flexShrink: 0 },
+  container: { position:"fixed", top:60, left:"50%", transform:"translateX(-50%)", display:"flex", flexDirection:"column", gap:8, zIndex:999, pointerEvents:"none", width:"calc(100% - 40px)", maxWidth:440 },
+  toast: { display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:12, fontSize:13, fontWeight:600, backdropFilter:"blur(12px)", boxShadow:"0 4px 24px rgba(0,0,0,0.4)" },
+  success: { background:"rgba(74,222,128,0.15)", border:"1px solid rgba(74,222,128,0.3)", color:"#4ade80" },
+  error: { background:"rgba(248,113,113,0.15)", border:"1px solid rgba(248,113,113,0.3)", color:"#f87171" },
+  info: { background:"rgba(148,163,184,0.12)", border:"1px solid rgba(148,163,184,0.2)", color:"#94a3b8" },
+  icon: { fontSize:14, fontWeight:800, flexShrink:0 },
 };
 
-// ── Main component ─────────────────────────────────────────
-
+// ── Main ───────────────────────────────────────────────────
 export default function Cube3Dscreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const cubeRef = useRef(null);
   const solveTimerRef = useRef(null);
+  const trackerRef = useRef(null);
 
-  const [faceColors, setFaceColors] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem("cube_colors")) || buildDefaultColors(); }
-    catch { return buildDefaultColors(); }
-  });
+  const [ready, setReady]                     = useState(false);
+  const [cubeKey, setCubeKey]                 = useState(0);
+  const [scrambledColors, setScrambledColors] = useState(() => buildSolved());
+  const [moveHistory, setMoveHistory]         = useState([]);
+  const [isAutoSolving, setIsAutoSolving]     = useState(false);
+  const [solutionMoves, setSolutionMoves]     = useState([]);
+  const [currentSolveIdx, setCurrentSolveIdx] = useState(0);
+  const [currentMove, setCurrentMove]         = useState("");
+  const [toasts, setToasts]                   = useState([]);
 
-  const [stateTracker] = useState(() => createStateTracker(
-    JSON.parse(sessionStorage.getItem("cube_colors") || "null") || buildDefaultColors()
-  ));
-
-  const [moveHistory,      setMoveHistory]      = useState([]);
-  const [isAutoSolving,    setIsAutoSolving]    = useState(false);
-  const [solutionMoves,    setSolutionMoves]    = useState([]);
-  const [currentSolveIdx,  setCurrentSolveIdx]  = useState(0);
-  const [currentMove,      setCurrentMove]      = useState("");
-  const [toasts,           setToasts]           = useState([]);
-
-  useEffect(() => () => { if (solveTimerRef.current) clearTimeout(solveTimerRef.current); }, []);
-
-  // ── Toast helpers ────────────────────────────────────────
-
+  // ── Toast — must be defined BEFORE useEffect ─────────────
   const showToast = useCallback((message, type = "info", duration = 3000) => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
   }, []);
 
-  // ── Move ─────────────────────────────────────────────────
+  // ── Init tracker ──────────────────────────────────────────
+  useEffect(() => {
+    createStateTracker().then(t => {
+      trackerRef.current = t;
 
+      const incoming = location.state?.faceColors;
+      if (incoming) {
+        const loaded = t.loadFromFaceColors(incoming);
+        if (loaded) {
+          setScrambledColors(incoming);
+          setCubeKey(k => k + 1);
+        } else {
+          showToast("Couldn't load scanned cube state", "error");
+        }
+      }
+
+      setReady(true);
+    });
+    return () => { if (solveTimerRef.current) clearTimeout(solveTimerRef.current); };
+  }, []);
+
+  // ── Apply single move ─────────────────────────────────────
   const applyMove = useCallback((move) => {
+    console.log("SCREEN applyMove:", move);
+    if (!trackerRef.current) { console.log("NO TRACKER"); return; }
     cubeRef.current?.applyMove(move);
-    const newState = stateTracker.applyMove(move);
+    trackerRef.current.applyMove(move);
     setMoveHistory(h => [...h, move]);
-    sessionStorage.setItem("cube_colors", JSON.stringify(newState));
-  }, [stateTracker]);
+  }, []);
 
-  // ── Scramble ─────────────────────────────────────────────
-
+  // ── Scramble ──────────────────────────────────────────────
   const handleScramble = useCallback(() => {
-    if (isAutoSolving) return;
-    const allMoves = Object.keys(MOVE_DEF);
+    if (!trackerRef.current || isAutoSolving) return;
     const scramble = [];
     let last = "";
     for (let i = 0; i < 20; i++) {
       let m;
-      do { m = allMoves[Math.floor(Math.random() * allMoves.length)]; } while (m[0] === last);
+      do { m = ALL_MOVES[Math.floor(Math.random() * ALL_MOVES.length)]; }
+      while (m[0] === last);
       last = m[0];
       scramble.push(m);
     }
-
-    // Reset state tracker to solved, then apply scramble
-    stateTracker.reset();
-    scramble.forEach(m => stateTracker.applyMove(m));
-    const scrambledState = stateTracker.getCurrentState();
-    sessionStorage.setItem("cube_colors", JSON.stringify(scrambledState));
-
-    // Apply to 3D cube
-    scramble.forEach(m => cubeRef.current?.applyMove(m));
-
+    trackerRef.current.reset();
+    scramble.forEach(m => trackerRef.current.applyMove(m));
+    const scrambledState = trackerRef.current.getCurrentState();
+    setScrambledColors(scrambledState);
+    setCubeKey(k => k + 1);
     setMoveHistory(scramble);
-    showToast(`Scrambled with ${scramble.length} moves`, "info");
-  }, [isAutoSolving, stateTracker, showToast]);
+    showToast(`Scrambled — ${scramble.length} moves`, "info");
+  }, [isAutoSolving, showToast]);
 
-  // ── Reset ────────────────────────────────────────────────
-
+  // ── Reset ─────────────────────────────────────────────────
   const handleReset = useCallback(() => {
     if (solveTimerRef.current) clearTimeout(solveTimerRef.current);
+    if (!trackerRef.current) return;
     setIsAutoSolving(false);
     setSolutionMoves([]);
     setCurrentMove("");
     setMoveHistory([]);
-    stateTracker.reset();
-    const solved = buildSolved();
-    setFaceColors(solved);
-    sessionStorage.setItem("cube_colors", JSON.stringify(solved));
-    cubeRef.current?.reset();
-    showToast("Cube reset to solved state", "info");
-  }, [stateTracker, showToast]);
-
-  // ── Auto solve ───────────────────────────────────────────
-
-  const executeNextMove = useCallback((moves, index) => {
-    if (index >= moves.length) {
-      setIsAutoSolving(false);
-      setSolutionMoves([]);
-      setCurrentMove("");
-      showToast("Cube solved! 🎉", "success", 4000);
-      return;
-    }
-    cubeRef.current?.applyMove(moves[index]);
-    setCurrentSolveIdx(index);
-    setCurrentMove(moves[index]);
-    solveTimerRef.current = setTimeout(() => executeNextMove(moves, index + 1), 420);
+    trackerRef.current.reset();
+    setScrambledColors(buildSolved());
+    setCubeKey(k => k + 1);
+    showToast("Reset to solved", "info");
   }, [showToast]);
 
+  // ── Auto solve ────────────────────────────────────────────
+const executeNextMove = useCallback((moves, index) => {
+  if (index >= moves.length) {
+    setIsAutoSolving(false);
+    setSolutionMoves([]);
+    setCurrentMove("");
+    // Sync tracker to solved state after auto-solve completes
+    trackerRef.current?.reset();
+    showToast("Cube solved! 🎉", "success", 4000);
+    return;
+  }
+  cubeRef.current?.applyMove(moves[index]);
+  trackerRef.current?.applyMove(moves[index]);  // ← ADD THIS LINE
+  setCurrentSolveIdx(index);
+  setCurrentMove(moves[index]);
+  solveTimerRef.current = setTimeout(() => executeNextMove(moves, index + 1), 420);
+}, [showToast]);
+
   const autoSolve = useCallback(async () => {
-    if (isAutoSolving) return;
+    if (!trackerRef.current || isAutoSolving) return;
     setIsAutoSolving(true);
     setCurrentMove("");
     setSolutionMoves([]);
-
     try {
-      const currentState = stateTracker.getCurrentState();
-      const moves = await solveCube(currentState);
-
-      if (moves === null) {
-        setIsAutoSolving(false);
-        showToast("Invalid cube state — cannot solve", "error");
-        return;
-      }
-      if (moves.length === 0) {
-        setIsAutoSolving(false);
-        showToast("Cube is already solved!", "success");
-        return;
-      }
-
+      const state = trackerRef.current.getCurrentState();
+      const moves = await solveCube(state);
+      if (moves === null) { setIsAutoSolving(false); showToast("Invalid cube state", "error"); return; }
+      if (moves.length === 0) { setIsAutoSolving(false); showToast("Already solved!", "success"); return; }
       showToast(`Solution: ${moves.length} moves`, "info");
       setSolutionMoves(moves);
-      setCurrentSolveIdx(0);
       executeNextMove(moves, 0);
     } catch (err) {
       console.error(err);
       setIsAutoSolving(false);
-      showToast("Solver error — try again", "error");
+      showToast("Solver error", "error");
     }
-  }, [isAutoSolving, stateTracker, executeNextMove, showToast]);
+  }, [isAutoSolving, executeNextMove, showToast]);
 
-  // ── Render ───────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────
+  if (!ready) {
+    return (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", flexDirection:"column", gap:12 }}>
+        <div style={{ width:36, height:36, border:"3px solid rgba(255,255,255,0.06)", borderTop:"3px solid #e2e8f0", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+        <span style={{ color:"#475569", fontSize:13 }}>Loading cube...</span>
+      </div>
+    );
+  }
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <div style={s.root}>
       <Toast toasts={toasts} />
 
-      {/* Header */}
       <div style={s.header}>
         <div style={s.headerTop}>
           <span style={s.title}>3D Cube</span>
           <div style={s.headerBtns}>
-            <button style={s.smallBtn} onClick={handleScramble} disabled={isAutoSolving}>
-              🔀 Scramble
-            </button>
-            <button style={s.smallBtn} onClick={handleReset}>
-              ↺ Reset
-            </button>
+            <button style={s.smallBtn} onClick={handleScramble} disabled={isAutoSolving}>🔀 Scramble</button>
+            <button style={s.smallBtn} onClick={handleReset}>↺ Reset</button>
           </div>
         </div>
         <span style={s.subtitle}>Drag to rotate · scroll to zoom</span>
       </div>
 
-      {/* Canvas */}
       <div style={s.canvasWrapper}>
-        <Cube3D ref={cubeRef} faceColors={faceColors} />
+        <Cube3D key={cubeKey} ref={cubeRef} faceColors={scrambledColors} />
       </div>
 
-      {/* Move history */}
       {moveHistory.length > 0 && (
         <div style={s.historyStrip}>
           {moveHistory.slice(-14).map((m, i) => (
@@ -245,7 +214,6 @@ export default function Cube3Dscreen() {
         </div>
       )}
 
-      {/* Move buttons */}
       <div style={s.movePanel}>
         {MOVE_GROUPS.map(({ label, moves }) => (
           <div key={label} style={s.moveGroup}>
@@ -259,7 +227,6 @@ export default function Cube3Dscreen() {
         ))}
       </div>
 
-      {/* Solution display */}
       {solutionMoves.length > 0 && (
         <div style={s.solutionBar}>
           <span style={s.solutionLabel}>Solution:</span>
@@ -275,11 +242,8 @@ export default function Cube3Dscreen() {
         </div>
       )}
 
-      {/* Actions */}
       <div style={s.actions}>
-        <button style={s.secondaryBtn} onClick={() => navigate("/review")}>
-          ← Review
-        </button>
+        <button style={s.secondaryBtn} onClick={() => navigate("/review")}>← Review</button>
         <button
           style={{ ...s.solveBtn, opacity: isAutoSolving ? 0.7 : 1 }}
           onClick={autoSolve}
@@ -293,7 +257,6 @@ export default function Cube3Dscreen() {
 }
 
 // ── Styles ─────────────────────────────────────────────────
-
 const s = {
   root: { display:"flex", flexDirection:"column", height:"100%", padding:"12px 16px 16px", gap:10, overflowY:"auto" },
   header: { display:"flex", flexDirection:"column", gap:2, flexShrink:0 },

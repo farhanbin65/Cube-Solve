@@ -1,70 +1,14 @@
-function rotateCW(t) {
-  return [t[6],t[3],t[0], t[7],t[4],t[1], t[8],t[5],t[2]];
-}
+const FACE_TO_COLOR = {
+  U: "white", R: "red", F: "green",
+  D: "yellow", L: "orange", B: "blue",
+};
 
-function clone(fc) {
-  const r = {};
-  for (const k of Object.keys(fc)) r[k] = [...fc[k]];
-  return r;
-}
-
-function applyCW(fc, base) {
-  const r = clone(fc);
-  switch (base) {
-    case "U":
-      r.U = rotateCW(fc.U);
-      [r.R[0],r.R[1],r.R[2]] = [fc.B[0],fc.B[1],fc.B[2]];
-      [r.F[0],r.F[1],r.F[2]] = [fc.R[0],fc.R[1],fc.R[2]];
-      [r.L[0],r.L[1],r.L[2]] = [fc.F[0],fc.F[1],fc.F[2]];
-      [r.B[0],r.B[1],r.B[2]] = [fc.L[0],fc.L[1],fc.L[2]];
-      break;
-    case "D":
-      r.D = rotateCW(fc.D);
-      [r.F[6],r.F[7],r.F[8]] = [fc.R[6],fc.R[7],fc.R[8]];
-      [r.L[6],r.L[7],r.L[8]] = [fc.F[6],fc.F[7],fc.F[8]];
-      [r.B[6],r.B[7],r.B[8]] = [fc.L[6],fc.L[7],fc.L[8]];
-      [r.R[6],r.R[7],r.R[8]] = [fc.B[6],fc.B[7],fc.B[8]];
-      break;
-    case "R":
-      r.R = rotateCW(fc.R);
-      [r.U[2],r.U[5],r.U[8]] = [fc.F[2],fc.F[5],fc.F[8]];
-      [r.F[2],r.F[5],r.F[8]] = [fc.D[2],fc.D[5],fc.D[8]];
-      [r.D[2],r.D[5],r.D[8]] = [fc.B[6],fc.B[3],fc.B[0]];
-      [r.B[0],r.B[3],r.B[6]] = [fc.U[8],fc.U[5],fc.U[2]];
-      break;
-    case "L":
-      r.L = rotateCW(fc.L);
-      [r.U[0],r.U[3],r.U[6]] = [fc.B[8],fc.B[5],fc.B[2]];
-      [r.F[0],r.F[3],r.F[6]] = [fc.U[0],fc.U[3],fc.U[6]];
-      [r.D[0],r.D[3],r.D[6]] = [fc.F[0],fc.F[3],fc.F[6]];
-      [r.B[2],r.B[5],r.B[8]] = [fc.D[6],fc.D[3],fc.D[0]];
-      break;
-    case "F":
-      r.F = rotateCW(fc.F);
-      [r.U[6],r.U[7],r.U[8]] = [fc.L[8],fc.L[5],fc.L[2]];
-      [r.R[0],r.R[3],r.R[6]] = [fc.U[6],fc.U[7],fc.U[8]];
-      [r.D[0],r.D[1],r.D[2]] = [fc.R[6],fc.R[3],fc.R[0]];
-      [r.L[2],r.L[5],r.L[8]] = [fc.D[0],fc.D[1],fc.D[2]];
-      break;
-    case "B":
-      r.B = rotateCW(fc.B);
-      [r.U[0],r.U[1],r.U[2]] = [fc.R[2],fc.R[5],fc.R[8]];
-      [r.R[2],r.R[5],r.R[8]] = [fc.D[8],fc.D[7],fc.D[6]];
-      [r.D[6],r.D[7],r.D[8]] = [fc.L[0],fc.L[3],fc.L[6]];
-      [r.L[0],r.L[3],r.L[6]] = [fc.U[2],fc.U[1],fc.U[0]];
-      break;
-    default: return fc;
+function cubeStringToFaceColors(str) {
+  const faces = ["U", "R", "F", "D", "L", "B"];
+  const result = {};
+  for (let i = 0; i < 6; i++) {
+    result[faces[i]] = str.slice(i * 9, (i + 1) * 9).split("").map(l => FACE_TO_COLOR[l]);
   }
-  return r;
-}
-
-export function applyMoveToState(state, move) {
-  const base = move[0];
-  const isPrime = move.includes("'");
-  const isDouble = move.includes("2");
-  const times = isPrime ? 3 : isDouble ? 2 : 1;
-  let result = state;
-  for (let i = 0; i < times; i++) result = applyCW(result, base);
   return result;
 }
 
@@ -79,17 +23,87 @@ export function buildSolved() {
   };
 }
 
-export function createStateTracker(initialState) {
-  let currentState = JSON.parse(JSON.stringify(initialState));
+// Converts faceColors object → 54-char kociemba string
+// Works with canonical color names ("white", "red"...) since centers define the mapping
+export function faceColorsToString(faceColors) {
+  const order = ["U", "R", "F", "D", "L", "B"];
+
+  // Build color → face letter map from the 6 center stickers
+  const colorToFace = {};
+  for (const face of order) {
+    const center = faceColors[face]?.[4];
+    if (!center || center === "unknown") return null;
+    colorToFace[center] = face;
+  }
+  if (Object.keys(colorToFace).length !== 6) return null;
+
+  let str = "";
+  for (const face of order) {
+    const tiles = faceColors[face] || [];
+    for (let i = 0; i < 9; i++) {
+      const letter = colorToFace[tiles[i]];
+      if (!letter) {
+        console.error(`faceColorsToString: unmapped color "${tiles[i]}" on ${face}[${i}]`);
+        return null;
+      }
+      str += letter;
+    }
+  }
+  return str;
+}
+
+let CubeClass = null;
+
+async function getCubeClass() {
+  if (!CubeClass) {
+    const mod = await import("kociemba-wasm");
+    CubeClass = mod.Cube;
+  }
+  return CubeClass;
+}
+
+
+export async function createStateTracker() {
+  const Cube = await getCubeClass();
+  let cube = new Cube();
 
   return {
-    applyMove: (move) => {
-      currentState = applyMoveToState(currentState, move);
-      return currentState;
+    applyMove(move) {
+      const base = move[0];                          // "R", "U", "F" etc.
+      const times = move.includes("2") ? 2           // R2 = 2 quarter turns
+                  : move.includes("'") ? 3           // R' = 3 quarter turns
+                  : 1;                               // R  = 1 quarter turn
+      for (let i = 0; i < times; i++) cube.action(base);
+      return cubeStringToFaceColors(cube.toString());
     },
-    getCurrentState: () => currentState,
-    reset: () => {
-      currentState = JSON.parse(JSON.stringify(initialState));
+    applyMove(move) {
+      const base = move[0];
+      const times = move.includes("2") ? 2 : move.includes("'") ? 3 : 1;
+      console.log("TRACKER:", move, "base:", base, "times:", times);
+      for (let i = 0; i < times; i++) cube.action(base);
+      const state = cube.toString();
+      console.log("TRACKER STATE:", state);
+      return cubeStringToFaceColors(state);
+    },
+    getCurrentState() {
+      const str = cube.toString();
+      console.log("🔍 tracker state:", str);
+      return cubeStringToFaceColors(str);
+    },
+
+    reset() {
+      cube = new Cube();
+    },
+
+    // Load state from a scanned/reviewed faceColors object
+    loadFromFaceColors(faceColors) {
+      const cubeStr = faceColorsToString(faceColors);
+      if (!cubeStr) {
+        console.error("loadFromFaceColors: invalid faceColors");
+        return false;
+      }
+      cube = new Cube(cubeStr);
+      return true;
     },
   };
 }

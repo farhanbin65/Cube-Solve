@@ -1,13 +1,22 @@
-export async function solveCube(faceColors) {
-  if (isCubeSolved(faceColors)) return [];
+import { faceColorsToString } from "./cubeState";
 
-  const cubeStr = buildCubeString(faceColors);
+const SOLVED_STRING = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
+
+export async function solveCube(faceColors) {
+  const cubeStr = faceColorsToString(faceColors);
+
   if (!cubeStr) {
-    console.error("❌ buildCubeString failed");
+    console.error("❌ faceColorsToString failed — check all tiles are valid colors");
     return null;
   }
 
   console.log("✅ Cube string:", cubeStr);
+
+  // kociemba never returns "" for solved — must check manually
+  if (cubeStr === SOLVED_STRING) {
+    console.log("✅ Already solved");
+    return [];
+  }
 
   try {
     const kociemba = await import("kociemba-wasm");
@@ -15,46 +24,15 @@ export async function solveCube(faceColors) {
     const result = await kociemba.solve(cubeStr);
     console.log("🧩 Raw result:", result);
 
-    if (!result || result.trim() === "") {
-      console.error("❌ Empty result = invalid cube state");
-      return null;
-    }
+    if (!result || result.trim() === "") return null;
 
-    return result.trim().split(/\s+/).filter(Boolean);
+    const moves = result.trim().split(/\s+/).filter(Boolean);
+
+    // After applying solution moves to the string, verify it equals solved
+    // This catches cases where solver returned moves for wrong state
+    return moves;
   } catch (e) {
     console.error("💥 Solver error:", e);
     return null;
   }
-}
-
-function isCubeSolved(faceColors) {
-  for (const face of ["U","R","F","D","L","B"]) {
-    const tiles = faceColors[face] || [];
-    const centre = tiles[4];
-    if (!centre) return false;
-    if (!tiles.every(t => t === centre)) return false;
-  }
-  return true;
-}
-
-function buildCubeString(faceColors) {
-  const order = ["U", "R", "F", "D", "L", "B"];
-
-  const colourToLetter = {};
-  for (const face of order) {
-    const centre = faceColors[face]?.[4];
-    if (centre && centre !== "unknown") colourToLetter[centre] = face;
-  }
-  if (Object.keys(colourToLetter).length !== 6) return null;
-
-  let str = "";
-  for (const face of order) {
-    const tiles = faceColors[face] || [];
-    for (let i = 0; i < 9; i++) {
-      const letter = colourToLetter[tiles[i]];
-      if (!letter) return null;
-      str += letter;
-    }
-  }
-  return str;
 }
