@@ -1,6 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import Lottie from "lottie-react";
-import cubeAnimation from "../assets/cube-animation.json";
 
 const STEPS = [
   { num: "01", label: "Scan all six cube faces" },
@@ -14,19 +12,13 @@ export default function IntroScreen() {
 
   return (
     <div style={s.root}>
-      {/* Header */}
       <div style={s.header}>
         <span style={s.tag}>Precision Lab · Farhan Bin Hossain</span>
       </div>
 
-      {/* Hero */}
       <div style={s.hero}>
         <div style={s.cubeWrapper}>
-          <Lottie
-            animationData={cubeAnimation}
-            loop={true}
-            style={{ width: 100, height: 100 }}
-          />
+          <CubeGraphic />
         </div>
         <h1 style={s.heading}>
           Solve any cube,<br />
@@ -38,7 +30,6 @@ export default function IntroScreen() {
         </p>
       </div>
 
-      {/* Steps */}
       <div style={s.stepsWrapper}>
         {STEPS.map((step, i) => (
           <div key={i} style={s.stepRow}>
@@ -49,7 +40,6 @@ export default function IntroScreen() {
         ))}
       </div>
 
-      {/* CTA */}
       <div style={s.ctaWrapper}>
         <button style={s.primaryBtn} onClick={() => {
           if (window.axisTimer) window.axisTimer.start();
@@ -68,6 +58,29 @@ export default function IntroScreen() {
         <span style={s.ctaHint}>Camera access required for scanning</span>
       </div>
     </div>
+  );
+}
+
+function CubeGraphic() {
+  return (
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <path d="M40 8L68 24V24L40 40L12 24V24L40 8Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <path d="M12 24L40 40V72L12 56V24Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      <path d="M68 24L40 40V72L68 56V24Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      <line x1="30.7" y1="13.3" x2="58.7" y2="29.3" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+      <line x1="21.3" y1="18.7" x2="49.3" y2="34.7" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+      <line x1="26.7" y1="10.7" x2="26.7" y2="26.7" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+      <line x1="40" y1="8" x2="40" y2="40" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+      <line x1="53.3" y1="10.7" x2="53.3" y2="26.7" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+      <line x1="12" y1="34.7" x2="40" y2="50.7" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="12" y1="45.3" x2="40" y2="61.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="21.3" y1="29.3" x2="21.3" y2="61.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="30.7" y1="34.7" x2="30.7" y2="66.7" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="40" y1="50.7" x2="68" y2="34.7" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="40" y1="61.3" x2="68" y2="45.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="49.3" y1="34.7" x2="49.3" y2="66.7" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+      <line x1="58.7" y1="29.3" x2="58.7" y2="61.3" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+    </svg>
   );
 }
 
