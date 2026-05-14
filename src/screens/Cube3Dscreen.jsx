@@ -57,7 +57,7 @@ export default function Cube3Dscreen() {
 
   const [ready, setReady]                     = useState(false);
   const [cubeKey, setCubeKey]                 = useState(0);
-  const [scrambledColors, setScrambledColors] = useState(() => buildSolved());
+  const [scrambledColors, setScrambledColors] = useState(() => location.state?.faceColors || buildSolved());
   const [moveHistory, setMoveHistory]         = useState([]);
   const [isAutoSolving, setIsAutoSolving]     = useState(false);
   const [solutionMoves, setSolutionMoves]     = useState([]);
@@ -80,12 +80,8 @@ export default function Cube3Dscreen() {
       const incoming = location.state?.faceColors;
       if (incoming) {
         const loaded = t.loadFromFaceColors(incoming);
-        if (loaded) {
-          setScrambledColors(incoming);
-          setCubeKey(k => k + 1);
-        } else {
-          showToast("Couldn't load scanned cube state", "error");
-        }
+        if (!loaded) showToast("Couldn't load scanned cube state", "error");
+        // No setScrambledColors needed — already initialized from location.state
       }
 
       setReady(true);
@@ -243,7 +239,10 @@ const executeNextMove = useCallback((moves, index) => {
       )}
 
       <div style={s.actions}>
-        <button style={s.secondaryBtn} onClick={() => navigate("/review")}>← Review</button>
+        <button style={s.secondaryBtn} onClick={() => {
+          const currentState = trackerRef.current?.getCurrentState();
+          navigate("/review", { state: { faceColors: currentState } });
+        }}>← Review</button>
         <button
           style={{ ...s.solveBtn, opacity: isAutoSolving ? 0.7 : 1 }}
           onClick={autoSolve}

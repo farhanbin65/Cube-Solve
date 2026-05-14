@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { faceColorsToString } from "../utils/cubeState";
 
 const FACES = [
@@ -103,9 +103,12 @@ function buildDefaultColors() {
 
 export default function ReviewScreen() {
   const navigate  = useNavigate();
+  const location  = useLocation();
   const pickerRef = useRef(null);
 
   const [faceColors, setFaceColors] = useState(() => {
+    // Priority: state from 3D screen > sessionStorage > default
+    if (location.state?.faceColors) return location.state.faceColors;
     try {
       return JSON.parse(sessionStorage.getItem("cube_colors")) || buildDefaultColors();
     } catch {
