@@ -15,6 +15,7 @@
     "cube-solver": "^2.4.1",
     "cubing": "^0.63.3",
     "kociemba-wasm": "^1.0.3",
+    "lottie-react": "^2.4.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.0",
