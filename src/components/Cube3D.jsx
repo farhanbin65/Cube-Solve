@@ -78,20 +78,44 @@ function snapVec(v) {
   return new THREE.Vector3(Math.round(v.x), Math.round(v.y), Math.round(v.z));
 }
 
-// ── Use world-space face normal to determine clicked face ──
-// This is rotation-invariant: works correctly after any cube moves
+function getColorNameFromHex(hex) {
+  for (const [name, colorHex] of Object.entries(COLOR_HEX)) {
+    if (colorHex === hex) return name;
+  }
+  return null;
+}
+
+function getCurrentCubeState(currentCubies) {
+  const faces = {
+    U: Array(9).fill(null), R: Array(9).fill(null), F: Array(9).fill(null),
+    D: Array(9).fill(null), L: Array(9).fill(null), B: Array(9).fill(null),
+  };
+  currentCubies.forEach(cubie => {
+    const { pos, colors } = cubie;
+    const [x, y, z] = [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)];
+    if (y ===  1) { const idx = (-z+1)*3+(x+1);  const n = getColorNameFromHex(colors[2]); if (n) faces.U[idx] = n; }
+    if (y === -1) { const idx = ( z+1)*3+(x+1);  const n = getColorNameFromHex(colors[3]); if (n) faces.D[idx] = n; }
+    if (x ===  1) { const idx = (-y+1)*3+(-z+1); const n = getColorNameFromHex(colors[0]); if (n) faces.R[idx] = n; }
+    if (x === -1) { const idx = (-y+1)*3+( z+1); const n = getColorNameFromHex(colors[1]); if (n) faces.L[idx] = n; }
+    if (z ===  1) { const idx = (-y+1)*3+(x+1);  const n = getColorNameFromHex(colors[4]); if (n) faces.F[idx] = n; }
+    if (z === -1) { const idx = (-y+1)*3+(-x+1); const n = getColorNameFromHex(colors[5]); if (n) faces.B[idx] = n; }
+  });
+  for (const [face, stickers] of Object.entries(faces)) {
+    for (let i = 0; i < 9; i++) {
+      if (!stickers[i]) stickers[i] = FACE_TO_COLOR[face] || "white";
+    }
+  }
+  return faces;
+}
+
+// ── World-space face normal → clicked face ─────────────────
 function getClickedFace(event) {
   if (!event.face || !event.object) return null;
-
-  // Transform the face normal from local to world space
   const normal = event.face.normal.clone();
   normal.transformDirection(event.object.matrixWorld);
-
-  // Find which world axis it aligns with most
   const ax = Math.abs(normal.x);
   const ay = Math.abs(normal.y);
   const az = Math.abs(normal.z);
-
   if (ax > ay && ax > az) return normal.x > 0 ? "R" : "L";
   if (ay > ax && ay > az) return normal.y > 0 ? "U" : "D";
   return normal.z > 0 ? "F" : "B";
@@ -100,70 +124,21 @@ function getClickedFace(event) {
 // ── CubieScene ─────────────────────────────────────────────
 const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange }, ref) {
   const [cubies, setCubies] = useState(() => buildInitialCubies(faceColors));
+  const cubiesRef = useRef(cubies); // always holds latest cubies
   const anim = useRef(null);
   const groupRefs = useRef({});
   const queue = useRef([]);
   const busy = useRef(false);
 
+  // Re-init when faceColors changes (e.g. new scan loaded)
   useEffect(() => {
-    setCubies(buildInitialCubies(faceColors));
+    const initial = buildInitialCubies(faceColors);
+    cubiesRef.current = initial;
+    setCubies(initial);
     queue.current = [];
     busy.current = false;
     anim.current = null;
   }, [faceColors]);
-
-  useImperativeHandle(ref, () => ({
-    applyMove: (move) => {
-      const def = MOVE_DEF[move];
-      if (!def) return;
-      queue.current.push(def);
-      processQueue();
-    },
-    reset: () => {
-      setCubies(buildInitialCubies(faceColors));
-      queue.current = [];
-      busy.current = false;
-      anim.current = null;
-    },
-    scramble: () => {
-      const moves = Object.keys(MOVE_DEF);
-      for (let i = 0; i < 20; i++) {
-        queue.current.push(MOVE_DEF[moves[Math.floor(Math.random() * moves.length)]]);
-      }
-      processQueue();
-    },
-    getCurrentState: () => getCurrentCubeState(cubies),
-  }));
-
-  const getCurrentCubeState = (currentCubies) => {
-    const faces = {
-      U: Array(9).fill(null), R: Array(9).fill(null), F: Array(9).fill(null),
-      D: Array(9).fill(null), L: Array(9).fill(null), B: Array(9).fill(null),
-    };
-    currentCubies.forEach(cubie => {
-      const { pos, colors } = cubie;
-      const [x, y, z] = [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)];
-      if (y ===  1) { const idx = (-z+1)*3+(x+1); const n = getColorNameFromHex(colors[2]); if (n) faces.U[idx] = n; }
-      if (y === -1) { const idx = ( z+1)*3+(x+1); const n = getColorNameFromHex(colors[3]); if (n) faces.D[idx] = n; }
-      if (x ===  1) { const idx = (-y+1)*3+(-z+1); const n = getColorNameFromHex(colors[0]); if (n) faces.R[idx] = n; }
-      if (x === -1) { const idx = (-y+1)*3+( z+1); const n = getColorNameFromHex(colors[1]); if (n) faces.L[idx] = n; }
-      if (z ===  1) { const idx = (-y+1)*3+(x+1); const n = getColorNameFromHex(colors[4]); if (n) faces.F[idx] = n; }
-      if (z === -1) { const idx = (-y+1)*3+(-x+1); const n = getColorNameFromHex(colors[5]); if (n) faces.B[idx] = n; }
-    });
-    for (const [face, stickers] of Object.entries(faces)) {
-      for (let i = 0; i < 9; i++) {
-        if (!stickers[i]) stickers[i] = FACE_TO_COLOR[face] || "white";
-      }
-    }
-    return faces;
-  };
-
-  function getColorNameFromHex(hex) {
-    for (const [name, colorHex] of Object.entries(COLOR_HEX)) {
-      if (colorHex === hex) return name;
-    }
-    return null;
-  }
 
   const processQueue = useCallback(() => {
     if (busy.current || queue.current.length === 0) return;
@@ -178,27 +153,49 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
     processQueue();
   }, [processQueue]);
 
-  // ── Click handler: face normal → axis, cubie pos → layer ──
+  // Expose imperative API — uses cubiesRef so always has latest state
+  useImperativeHandle(ref, () => ({
+    applyMove: (move) => {
+      const def = MOVE_DEF[move];
+      if (!def) return;
+      queue.current.push(def);
+      processQueue();
+    },
+    reset: () => {
+      const initial = buildInitialCubies(faceColors);
+      cubiesRef.current = initial;
+      setCubies(initial);
+      queue.current = [];
+      busy.current = false;
+      anim.current = null;
+    },
+    scramble: () => {
+      const moves = Object.keys(MOVE_DEF);
+      for (let i = 0; i < 20; i++) {
+        queue.current.push(MOVE_DEF[moves[Math.floor(Math.random() * moves.length)]]);
+      }
+      processQueue();
+    },
+    // ✅ reads from ref, not stale closure
+    getCurrentState: () => getCurrentCubeState(cubiesRef.current),
+  }));
+
+  // Click: world-space normal → face, cubie.pos → layer
   const handleFaceClick = useCallback((face, cubie) => {
     const x = Math.round(cubie.pos.x);
     const y = Math.round(cubie.pos.y);
     const z = Math.round(cubie.pos.z);
-
     let move = null;
     if (face === "U" || face === "D") {
       if      (y ===  1) move = "U";
       else if (y === -1) move = "D";
-      // y === 0: middle E-slice — skip (no standard single-letter move)
     } else if (face === "R" || face === "L") {
       if      (x ===  1) move = "R";
       else if (x === -1) move = "L";
-      // x === 0: middle M-slice — skip
     } else if (face === "F" || face === "B") {
       if      (z ===  1) move = "F";
       else if (z === -1) move = "B";
-      // z === 0: middle S-slice — skip
     }
-
     if (move) applyMoveToCube(move);
   }, [applyMoveToCube]);
 
@@ -219,7 +216,8 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
     );
     const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVec, currentAngle);
 
-    cubies.forEach(c => {
+    // Animate meshes visually
+    cubiesRef.current.forEach(c => {
       if (Math.round(c.pos[a.axis]) !== a.layer) return;
       const mesh = groupRefs.current[c.id];
       if (!mesh) return;
@@ -231,12 +229,15 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
     if (t >= 1) {
       a.done = true;
       anim.current = null;
+
       const axisVec2 = new THREE.Vector3(
         a.axis === "x" ? 1 : 0,
         a.axis === "y" ? 1 : 0,
         a.axis === "z" ? 1 : 0,
       );
       const finalQuat = new THREE.Quaternion().setFromAxisAngle(axisVec2, a.angle);
+
+      // Update both state and ref atomically
       setCubies(prev => {
         const newCubies = prev.map(c => {
           if (Math.round(c.pos[a.axis]) !== a.layer) return c;
@@ -246,9 +247,11 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
             quat: finalQuat.clone().multiply(c.quat),
           };
         });
+        cubiesRef.current = newCubies; // ✅ keep ref in sync
         if (onStateChange) onStateChange(getCurrentCubeState(newCubies));
         return newCubies;
       });
+
       busy.current = false;
       processQueue();
     }
@@ -280,7 +283,7 @@ function CubieMesh({ cubie, meshRef, onFaceClick }) {
 
   const handleClick = (event) => {
     event.stopPropagation();
-    const face = getClickedFace(event); // world-space normal
+    const face = getClickedFace(event);
     if (face && onFaceClick) onFaceClick(face, cubie);
   };
 
@@ -327,7 +330,11 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange }, ref) {
       <directionalLight position={[5, 8, 5]} intensity={0.9} castShadow />
       <directionalLight position={[-5, 3, -5]} intensity={0.3} />
 
-      <CubieScene ref={sceneRef} faceColors={faceColors} onStateChange={onStateChange} />
+      <CubieScene
+        ref={sceneRef}
+        faceColors={faceColors}
+        onStateChange={onStateChange}
+      />
 
       <OrbitControls
         enablePan={false}
