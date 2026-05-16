@@ -152,9 +152,9 @@ export default function Cube3Dscreen() {
     setCurrentMove("");
     setSolutionMoves([]);
     try {
-      const trackerState = trackerRef.current.getCurrentState();
-      const savedColors  = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
-      const state = moveHistory.length === 0 && savedColors ? savedColors : trackerState;
+      // Use the 3D cube's own visual state — always accurate
+      const state = cubeRef.current?.getCurrentState() 
+        || trackerRef.current.getCurrentState();
       const moves = await solveCube(state);
       if (moves === null) { setIsAutoSolving(false); showToast("Invalid cube state", "error"); return; }
       if (moves.length === 0) { setIsAutoSolving(false); showToast("Already solved!", "success"); return; }
