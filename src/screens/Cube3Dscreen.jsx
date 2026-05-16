@@ -314,7 +314,7 @@ export default function Cube3Dscreen() {
 const s = {
   root: {
     display:"flex", flexDirection:"column", height:"100%",
-    padding:"12px 16px 20px", gap:10, overflowY:"auto",
+    padding:"12px 16px 20px", gap:10, overflowY:"hidden",
     background:"#080810",
   },
 
@@ -336,9 +336,9 @@ const s = {
   subtitle: { color:"#334155", fontSize:11 },
 
   // Canvas
-  canvasWrapper: {
+canvasWrapper: {
     position:"relative", flexShrink:0,
-    height:280, borderRadius:18, overflow:"hidden",
+    flex:1, minHeight:0, borderRadius:18, overflow:"hidden",
     border:"1px solid rgba(255,255,255,0.07)",
     background:"radial-gradient(ellipse at 50% 30%, rgba(102,126,234,0.08) 0%, rgba(8,8,16,0.95) 70%)",
     boxShadow:"0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
