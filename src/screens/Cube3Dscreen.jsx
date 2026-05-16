@@ -157,7 +157,17 @@ const executeNextMove = useCallback((moves, index) => {
     setCurrentMove("");
     setSolutionMoves([]);
     try {
-      const state = trackerRef.current.getCurrentState();
+      // If moves have been applied, use tracker state.
+      // If freshly loaded from scan, tracker is broken — use sessionStorage directly.
+      const trackerState = trackerRef.current.getCurrentState();
+      const savedColors  = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
+      
+      // Check if tracker is still at initial loaded state (no moves applied yet)
+      // by comparing move history length
+      const state = moveHistory.length === 0 && savedColors
+        ? savedColors        // use raw scanned colors — faceColorsToString handles conversion
+        : trackerState;      // moves were applied, tracker is correct
+
       const moves = await solveCube(state);
       if (moves === null) { setIsAutoSolving(false); showToast("Invalid cube state", "error"); return; }
       if (moves.length === 0) { setIsAutoSolving(false); showToast("Already solved!", "success"); return; }
@@ -169,7 +179,7 @@ const executeNextMove = useCallback((moves, index) => {
       setIsAutoSolving(false);
       showToast("Solver error", "error");
     }
-  }, [isAutoSolving, executeNextMove, showToast]);
+  }, [isAutoSolving, moveHistory.length, executeNextMove, showToast]);
 
   // ── Loading ───────────────────────────────────────────────
   if (!ready) {

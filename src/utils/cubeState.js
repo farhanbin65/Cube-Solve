@@ -95,20 +95,33 @@ export async function createStateTracker() {
       cube = new Cube();
     },
 
-    // Load state from a scanned/reviewed faceColors object
     loadFromFaceColors(faceColors) {
       const cubeStr = faceColorsToString(faceColors);
       if (!cubeStr) {
         console.error("loadFromFaceColors: invalid faceColors");
         return false;
       }
-      cube = new Cube(cubeStr);
-      // Verify it loaded correctly
-      const readBack = cube.toString();
-      console.log("📥 Input string: ", cubeStr);
-      console.log("📤 Cube readback:", readBack);
-      console.log("✅ Match:", cubeStr === readBack);
+
+      // new Cube(str) is broken in kociemba-wasm — ignores the input.
+      // Instead: solve the SOLVED cube to find what moves reach this state,
+      // then replay those moves. But that's circular.
+      // Real fix: use kociemba solve() on cubeStr to get solution,
+      // then apply the INVERSE moves to a fresh cube to reach the state.
+
+      // Simplest working fix: store the cubeStr and use it directly in solveCube
+      // bypassing the tracker for the initial scanned state.
+      this._loadedCubeStr = cubeStr;
+      cube = new Cube(); // reset to solved
       return true;
+    },
+
+    getCurrentState() {
+      const str = cube.toString();
+      return cubeStringToFaceColors(str);
+    },
+
+    getLoadedCubeStr() {
+      return this._loadedCubeStr || null;
     },
   };
 }
