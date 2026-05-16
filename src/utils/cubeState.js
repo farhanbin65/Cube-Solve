@@ -103,6 +103,11 @@ export async function createStateTracker() {
         return false;
       }
       cube = new Cube(cubeStr);
+      // Verify it loaded correctly
+      const readBack = cube.toString();
+      console.log("📥 Input string: ", cubeStr);
+      console.log("📤 Cube readback:", readBack);
+      console.log("✅ Match:", cubeStr === readBack);
       return true;
     },
   };

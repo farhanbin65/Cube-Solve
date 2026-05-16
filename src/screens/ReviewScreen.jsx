@@ -213,9 +213,8 @@ const handleTileClick = (faceKey, cellIndex, e) => {
       alert("Invalid cube — check your colours");
       return;
     }
-
     sessionStorage.setItem("cube_colors", JSON.stringify(confirmedFaceColors));
-    navigate("/cube3d", { state: { faceColors: confirmedFaceColors } });
+    navigate("/solution", { state: { faceColors: confirmedFaceColors } });
   };
 
   const handleRescan = () => {
@@ -392,9 +391,9 @@ const handleTileClick = (faceKey, cellIndex, e) => {
             Confirm and solve
           </button>
         </div>
-              </div>
-            </div>
-          );
+      </div>
+    </div>
+  );
 }
 
 // ── Face Card ──────────────────────────────────────────────

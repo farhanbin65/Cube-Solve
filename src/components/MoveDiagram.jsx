@@ -1,3 +1,5 @@
+// MoveDiagram.jsx — Arrow drawn ON the cube face, on the correct layer
+
 const FACE_COLORS = {
   white:  "#f0f0eb",
   yellow: "#ffd700",
@@ -5,298 +7,257 @@ const FACE_COLORS = {
   orange: "#ff6420",
   green:  "#1e7a3c",
   blue:   "#1e50b4",
+  dark:   "#0f172a",
 };
 
-// Neighbour centres: top, bottom, left, right
-const NEIGHBOURS = {
-  U: { top: "blue",   bottom: "green",  left: "orange", right: "red"    },
-  R: { top: "white",  bottom: "yellow", left: "green",  right: "blue"   },
-  F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
-  D: { top: "green",  bottom: "blue",   left: "orange", right: "red"    },
-  L: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
-  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"    },
+// For each move: which face to show as FRONT (facing user), what's on top,
+// which row/col gets the arrow, and arrow direction
+const MOVE_VISUAL = {
+  // U moves — white on top, show green front face, TOP ROW gets arrow
+  "U":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"right" },
+  "U'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"left"  },
+  "U2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"right2"},
+
+  // D moves — yellow on bottom, show green front, BOTTOM ROW gets arrow
+  "D":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"left"  },
+  "D'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"right" },
+  "D2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"left2" },
+
+  // R moves — red on right, show green front, RIGHT COL gets arrow
+  "R":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col2", arrow:"up"   },
+  "R'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col2", arrow:"down" },
+  "R2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col2", arrow:"up2"  },
+
+  // L moves — orange on left, show green front, LEFT COL gets arrow
+  "L":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col0", arrow:"down" },
+  "L'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col0", arrow:"up"   },
+  "L2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col0", arrow:"down2"},
+
+  // F moves — green face rotates, show green front, WHOLE FACE gets arrow
+  "F":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"cw"   },
+  "F'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"ccw"  },
+  "F2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"cw2"  },
+
+  // B moves — show blue face as front so user can see it, WHOLE FACE gets arrow
+  "B":  { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"cw"   },
+  "B'": { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"ccw"  },
+  "B2": { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"cw2"  },
 };
 
-// Which face each move belongs to + direction
-const MOVE_META = {
-  "U":  { face: "U", arrow: "right",  label: "Top row →"            },
-  "U'": { face: "U", arrow: "left",   label: "Top row ←"            },
-  "U2": { face: "U", arrow: "right2", label: "Top row × 2"          },
-  "D":  { face: "D", arrow: "left",   label: "Bottom row ←"         },
-  "D'": { face: "D", arrow: "right",  label: "Bottom row →"         },
-  "D2": { face: "D", arrow: "left2",  label: "Bottom row × 2"       },
-  "R":  { face: "R", arrow: "up",     label: "Right column ↑"       },
-  "R'": { face: "R", arrow: "down",   label: "Right column ↓"       },
-  "R2": { face: "R", arrow: "up2",    label: "Right column × 2"     },
-  "L":  { face: "L", arrow: "down",   label: "Left column ↓"        },
-  "L'": { face: "L", arrow: "up",     label: "Left column ↑"        },
-  "L2": { face: "L", arrow: "down2",  label: "Left column × 2"      },
-  "F":  { face: "F", arrow: "cw",     label: "Front face ↻"         },
-  "F'": { face: "F", arrow: "ccw",    label: "Front face ↺"         },
-  "F2": { face: "F", arrow: "cw2",    label: "Front face × 2"       },
-  "B":  { face: "B", arrow: "ccw",    label: "Back face ↻ (from back)" },
-  "B'": { face: "B", arrow: "cw",     label: "Back face ↺ (from back)" },
-  "B2": { face: "B", arrow: "ccw2",   label: "Back face × 2"        },
+// Which cells belong to each highlight zone
+const HIGHLIGHT_CELLS = {
+  row0: [0,1,2],
+  row2: [6,7,8],
+  col0: [0,3,6],
+  col2: [2,5,8],
+  face: [0,1,2,3,4,5,6,7,8],
 };
 
-// ── Arrow SVGs ─────────────────────────────────────────────
+// Arrow SVG drawn inline in the SVG grid
+function ArrowSVG({ arrow, cellSize, gridSize }) {
+  const s   = cellSize;
+  const g   = gridSize; // 3*cellSize
+  const mid = g / 2;
+  const pad = s * 0.18;
+  const stroke = "#fff";
+  const sw = Math.max(2.5, s * 0.1);
+  const head = s * 0.28;
 
-function ArrowUp({ color, size }) {
-  return (
-    <svg width={size * 0.5} height={size} viewBox="0 0 14 28">
-      <line x1="7" y1="26" x2="7" y2="4" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-      <polyline points="2,9 7,2 12,9" fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+  const Line = ({ x1,y1,x2,y2 }) => (
+    <line x1={x1} y1={y1} x2={x2} y2={y2}
+      stroke={stroke} strokeWidth={sw} strokeLinecap="round"/>
   );
-}
 
-function ArrowDown({ color, size }) {
-  return (
-    <svg width={size * 0.5} height={size} viewBox="0 0 14 28">
-      <line x1="7" y1="2" x2="7" y2="24" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-      <polyline points="2,19 7,26 12,19" fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+  const Head = ({ points }) => (
+    <polyline points={points} fill="none"
+      stroke={stroke} strokeWidth={sw}
+      strokeLinecap="round" strokeLinejoin="round"/>
   );
-}
 
-function ArrowRight({ color, size }) {
-  return (
-    <svg width={size} height={size * 0.5} viewBox="0 0 28 14">
-      <line x1="2" y1="7" x2="24" y2="7" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-      <polyline points="19,2 26,7 19,12" fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function ArrowLeft({ color, size }) {
-  return (
-    <svg width={size} height={size * 0.5} viewBox="0 0 28 14">
-      <line x1="26" y1="7" x2="4" y2="7" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-      <polyline points="9,2 2,7 9,12" fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-// 180° — single arrow + ×2 badge
-function Arrow180({ color, size, direction }) {
-  const isVertical = direction === "up2" || direction === "down2";
-  const baseDir    = direction.replace("2", "");
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-      {baseDir === "up"    && <ArrowUp    color={color} size={size} />}
-      {baseDir === "down"  && <ArrowDown  color={color} size={size} />}
-      {baseDir === "right" && <ArrowRight color={color} size={size} />}
-      {baseDir === "left"  && <ArrowLeft  color={color} size={size} />}
-      <span style={{
-        color,
-        fontSize: size * 0.38,
-        fontWeight: 900,
-        letterSpacing: "-0.02em",
-        lineHeight: 1,
-      }}>×2</span>
-    </div>
-  );
-}
-
-// Clockwise — corner bracket rotating right
-function ArrowCW({ color, size }) {
-  const s = size;
-  return (
-    <svg width={s} height={s} viewBox="0 0 36 36">
-      {/* Corner bracket shape suggesting rotation */}
-      <path
-        d="M 28 8 A 14 14 0 1 1 8 28"
-        fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      {/* Arrowhead at end of arc */}
-      <polyline
-        points="4,22 8,29 15,26"
-        fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// Counter-clockwise
-function ArrowCCW({ color, size }) {
-  const s = size;
-  return (
-    <svg width={s} height={s} viewBox="0 0 36 36">
-      <path
-        d="M 8 8 A 14 14 0 1 0 28 28"
-        fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      <polyline
-        points="32,22 28,29 21,26"
-        fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// CW ×2
-function ArrowCW2({ color, size }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-      <ArrowCW color={color} size={size} />
-      <span style={{
-        color,
-        fontSize: size * 0.38,
-        fontWeight: 900,
-        lineHeight: 1,
-      }}>×2</span>
-    </div>
-  );
-}
-
-function ArrowCCW2({ color, size }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-      <ArrowCCW color={color} size={size} />
-      <span style={{
-        color,
-        fontSize: size * 0.38,
-        fontWeight: 900,
-        lineHeight: 1,
-      }}>×2</span>
-    </div>
-  );
-}
-
-function renderArrow(arrowType, color, size) {
-  switch (arrowType) {
-    case "up":    return <ArrowUp    color={color} size={size} />;
-    case "down":  return <ArrowDown  color={color} size={size} />;
-    case "right": return <ArrowRight color={color} size={size} />;
-    case "left":  return <ArrowLeft  color={color} size={size} />;
-    case "up2":   return <Arrow180   color={color} size={size} direction="up2"    />;
-    case "down2": return <Arrow180   color={color} size={size} direction="down2"  />;
-    case "right2":return <Arrow180   color={color} size={size} direction="right2" />;
-    case "left2": return <Arrow180   color={color} size={size} direction="left2"  />;
-    case "cw":    return <ArrowCW    color={color} size={size} />;
-    case "ccw":   return <ArrowCCW   color={color} size={size} />;
-    case "cw2":   return <ArrowCW2   color={color} size={size} />;
-    case "ccw2":  return <ArrowCCW2  color={color} size={size} />;
-    default:      return null;
+  if (arrow === "right" || arrow === "right2") {
+    const y = s * 0.5; // top row centre
+    return <>
+      <Line x1={pad} y1={y} x2={g - pad} y2={y}/>
+      <Head points={`${g-pad-head},${y-head/2} ${g-pad},${y} ${g-pad-head},${y+head/2}`}/>
+      {arrow==="right2" && <text x={g/2} y={y-s*0.15} textAnchor="middle"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
   }
+  if (arrow === "left" || arrow === "left2") {
+    const y = s * 0.5;
+    return <>
+      <Line x1={g-pad} y1={y} x2={pad} y2={y}/>
+      <Head points={`${pad+head},${y-head/2} ${pad},${y} ${pad+head},${y+head/2}`}/>
+      {arrow==="left2" && <text x={g/2} y={y-s*0.15} textAnchor="middle"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
+  }
+  if (arrow === "up" || arrow === "up2") {
+    const x = g - s * 0.5; // right col centre
+    return <>
+      <Line x1={x} y1={g-pad} x2={x} y2={pad}/>
+      <Head points={`${x-head/2},${pad+head} ${x},${pad} ${x+head/2},${pad+head}`}/>
+      {arrow==="up2" && <text x={x+s*0.18} y={g/2} textAnchor="start"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
+  }
+  if (arrow === "down" || arrow === "down2") {
+    const x = s * 0.5; // left col centre
+    return <>
+      <Line x1={x} y1={pad} x2={x} y2={g-pad}/>
+      <Head points={`${x-head/2},${g-pad-head} ${x},${g-pad} ${x+head/2},${g-pad-head}`}/>
+      {arrow==="down2" && <text x={x+s*0.18} y={g/2} textAnchor="start"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
+  }
+  // Clockwise arc on whole face
+  if (arrow === "cw" || arrow === "cw2") {
+    const r = g * 0.32;
+    return <>
+      <path d={`M ${mid+r},${mid} A ${r},${r} 0 1 1 ${mid},${mid+r}`}
+        fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round"/>
+      <Head points={`${mid-head/2},${mid+r-head/2} ${mid},${mid+r} ${mid+head/2},${mid+r-head/2}`}/>
+      {arrow==="cw2" && <text x={mid} y={mid+s*0.18} textAnchor="middle"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
+  }
+  if (arrow === "ccw" || arrow === "ccw2") {
+    const r = g * 0.32;
+    return <>
+      <path d={`M ${mid},${mid+r} A ${r},${r} 0 1 1 ${mid+r},${mid}`}
+        fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round"/>
+      <Head points={`${mid+r-head/2},${mid-head/2} ${mid+r},${mid} ${mid+r-head/2},${mid+head/2}`}/>
+      {arrow==="ccw2" && <text x={mid} y={mid+s*0.18} textAnchor="middle"
+        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+    </>;
+  }
+  return null;
 }
-
-// ── Main Component ─────────────────────────────────────────
 
 export default function MoveDiagram({ move, size = "md" }) {
-  const meta = MOVE_META[move];
+  const meta = MOVE_VISUAL[move];
   if (!meta) return null;
 
-  const { face, arrow, label } = meta;
-  const neighbours = NEIGHBOURS[face];
-  const faceColor  = FACE_COLORS[face === "U" ? "white"
-    : face === "D" ? "yellow"
-    : face === "R" ? "red"
-    : face === "L" ? "orange"
-    : face === "F" ? "green"
-    : "blue"];
+  const { front, top, left, right, bottom, highlight, arrow } = meta;
+  const highlightCells = HIGHLIGHT_CELLS[highlight] || [];
 
-  // Arrow colour: use face colour, but white face gets light grey for visibility
-  const arrowColor = faceColor === FACE_COLORS.white ? "#94a3b8" : faceColor;
+  // Size config
+  const cellSize  = size === "sm" ? 26 : size === "lg" ? 52 : 38;
+  const gap       = size === "sm" ? 2  : size === "lg" ? 4  : 3;
+  const stripSize = size === "sm" ? 7  : size === "lg" ? 14 : 10;
+  const gridSize  = cellSize * 3 + gap * 2;
 
-  const squareSize = size === "sm" ? 28 : size === "lg" ? 52 : 38;
-  const stripSize  = size === "sm" ? 5  : size === "lg" ? 9  : 7;
-  const arrowSize  = size === "sm" ? 18 : size === "lg" ? 32 : 24;
-  const fontSize   = size === "sm" ? 9  : size === "lg" ? 13 : 11;
-  const isVertical = ["up","down","up2","down2"].includes(arrow);
-  const isHoriz    = ["right","left","right2","left2"].includes(arrow);
-  const isRotation = ["cw","ccw","cw2","ccw2"].includes(arrow);
+  // Build 9 cells — front face colour unless highlighted
+  const cells = Array(9).fill(null).map((_, i) => {
+    const isHighlighted = highlightCells.includes(i);
+    return {
+      color: FACE_COLORS[front],
+      highlighted: isHighlighted,
+    };
+  });
+
+  const col = (i) => i % 3;
+  const row = (i) => Math.floor(i / 3);
 
   return (
-    <div style={{
-      display:       "flex",
-      flexDirection: "column",
-      alignItems:    "center",
-      gap:           size === "sm" ? 4 : 8,
-    }}>
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: size==="sm"?4:10 }}>
 
-      {/* ── Centre square with neighbour strips ── */}
+      {/* Top strip */}
       <div style={{
-        display:       "flex",
-        flexDirection: "column",
-        alignItems:    "center",
-        gap:           0,
-      }}>
+        width: gridSize,
+        height: stripSize,
+        background: FACE_COLORS[top],
+        borderRadius: "5px 5px 0 0",
+        marginBottom: -1,
+      }}/>
 
-        {/* Top neighbour strip */}
+      <div style={{ display:"flex", alignItems:"center" }}>
+
+        {/* Left strip */}
         <div style={{
-          width:           squareSize,
-          height:          stripSize,
-          background:      FACE_COLORS[neighbours.top],
-          borderRadius:    "3px 3px 0 0",
-        }} />
+          width: stripSize,
+          height: gridSize,
+          background: FACE_COLORS[left],
+          borderRadius: "5px 0 0 5px",
+          marginRight: -1,
+        }}/>
 
-        <div style={{ display: "flex", alignItems: "center" }}>
+        {/* SVG grid — cells + arrow overlay */}
+        <svg
+          width={gridSize}
+          height={gridSize}
+          style={{ display:"block", flexShrink:0 }}
+        >
+          {/* Cell backgrounds */}
+          {cells.map(({ color, highlighted }, i) => {
+            const x = col(i) * (cellSize + gap);
+            const y = row(i) * (cellSize + gap);
+            return (
+              <g key={i}>
+                <rect
+                  x={x} y={y}
+                  width={cellSize} height={cellSize}
+                  fill={color}
+                  rx={size==="lg"?4:2}
+                />
+                {/* Dim overlay on non-highlighted cells (for row/col moves) */}
+                {highlight !== "face" && !highlighted && (
+                  <rect
+                    x={x} y={y}
+                    width={cellSize} height={cellSize}
+                    fill="rgba(0,0,0,0.42)"
+                    rx={size==="lg"?4:2}
+                  />
+                )}
+              </g>
+            );
+          })}
 
-          {/* Left neighbour strip */}
-          <div style={{
-            width:        stripSize,
-            height:       squareSize,
-            background:   FACE_COLORS[neighbours.left],
-            borderRadius: "3px 0 0 3px",
-          }} />
+          {/* Arrow drawn in SVG coordinate space of the highlighted zone */}
+          {highlight === "row0" && (
+            <g transform={`translate(0, 0)`}>
+              <ArrowSVG arrow={arrow} cellSize={cellSize} gridSize={gridSize}/>
+            </g>
+          )}
+          {highlight === "row2" && (
+            <g transform={`translate(0, ${2*(cellSize+gap)})`}>
+              <ArrowSVG arrow={arrow} cellSize={cellSize} gridSize={gridSize}/>
+            </g>
+          )}
+          {highlight === "col0" && (
+            <g transform={`translate(0, 0)`}>
+              <ArrowSVG arrow={arrow} cellSize={cellSize} gridSize={gridSize}/>
+            </g>
+          )}
+          {highlight === "col2" && (
+            <g transform={`translate(${2*(cellSize+gap)}, 0)`}>
+              <ArrowSVG arrow={arrow} cellSize={cellSize} gridSize={gridSize}/>
+            </g>
+          )}
+          {highlight === "face" && (
+            <ArrowSVG arrow={arrow} cellSize={cellSize} gridSize={gridSize}/>
+          )}
+        </svg>
 
-          {/* Centre square — face colour */}
-          <div style={{
-            width:      squareSize,
-            height:     squareSize,
-            background: faceColor,
-            flexShrink: 0,
-          }} />
-
-          {/* Right neighbour strip */}
-          <div style={{
-            width:        stripSize,
-            height:       squareSize,
-            background:   FACE_COLORS[neighbours.right],
-            borderRadius: "0 3px 3px 0",
-          }} />
-
-        </div>
-
-        {/* Bottom neighbour strip */}
+        {/* Right strip */}
         <div style={{
-          width:           squareSize,
-          height:          stripSize,
-          background:      FACE_COLORS[neighbours.bottom],
-          borderRadius:    "0 0 3px 3px",
-        }} />
+          width: stripSize,
+          height: gridSize,
+          background: FACE_COLORS[right],
+          borderRadius: "0 5px 5px 0",
+          marginLeft: -1,
+        }}/>
 
       </div>
 
-      {/* ── Arrow ── */}
+      {/* Bottom strip */}
       <div style={{
-        display:    "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight:  arrowSize,
-      }}>
-        {renderArrow(arrow, arrowColor, arrowSize)}
-      </div>
-
-      {/* ── Label ── */}
-      <span style={{
-        color:      "#475569",
-        fontSize:   fontSize,
-        fontWeight: 500,
-        textAlign:  "center",
-        lineHeight: 1.3,
-      }}>
-        {label}
-      </span>
+        width: gridSize,
+        height: stripSize,
+        background: FACE_COLORS[bottom],
+        borderRadius: "0 0 5px 5px",
+        marginTop: -1,
+      }}/>
 
     </div>
   );

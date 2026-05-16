@@ -1,284 +1,267 @@
-// SolutionScreen.jsx - Complete working version with step-by-step
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MoveDiagram from "../components/MoveDiagram";
 import { solveCube } from "../utils/cubeSolver";
 
-const MOVE_INFO = {
-  "U": { desc: "Top row right" },
-  "U'": { desc: "Top row left" },
-  "U2": { desc: "Top row × 2" },
-  "D": { desc: "Bottom row left" },
-  "D'": { desc: "Bottom row right" },
-  "D2": { desc: "Bottom row × 2" },
-  "R": { desc: "Right column up" },
-  "R'": { desc: "Right column down" },
-  "R2": { desc: "Right column × 2" },
-  "L": { desc: "Left column down" },
-  "L'": { desc: "Left column up" },
-  "L2": { desc: "Left column × 2" },
-  "F": { desc: "Front face clockwise" },
-  "F'": { desc: "Front face counter-clock" },
-  "F2": { desc: "Front face × 2" },
-  "B": { desc: "Back face clockwise" },
-  "B'": { desc: "Back face counter-clock" },
-  "B2": { desc: "Back face × 2" },
+// Plain English instructions for non-cubers
+const MOVE_PLAIN = {
+  "U":  { action: "Turn the TOP layer",      dir: "to the RIGHT  →",  times: 1 },
+  "U'": { action: "Turn the TOP layer",      dir: "to the LEFT  ←",   times: 1 },
+  "U2": { action: "Turn the TOP layer",      dir: "HALFWAY (×2)",      times: 2 },
+  "D":  { action: "Turn the BOTTOM layer",   dir: "to the LEFT  ←",   times: 1 },
+  "D'": { action: "Turn the BOTTOM layer",   dir: "to the RIGHT  →",  times: 1 },
+  "D2": { action: "Turn the BOTTOM layer",   dir: "HALFWAY (×2)",      times: 2 },
+  "R":  { action: "Turn the RIGHT column",   dir: "UPWARD  ↑",         times: 1 },
+  "R'": { action: "Turn the RIGHT column",   dir: "DOWNWARD  ↓",       times: 1 },
+  "R2": { action: "Turn the RIGHT column",   dir: "HALFWAY (×2)",      times: 2 },
+  "L":  { action: "Turn the LEFT column",    dir: "DOWNWARD  ↓",       times: 1 },
+  "L'": { action: "Turn the LEFT column",    dir: "UPWARD  ↑",         times: 1 },
+  "L2": { action: "Turn the LEFT column",    dir: "HALFWAY (×2)",      times: 2 },
+  "F":  { action: "Turn the FRONT face",     dir: "CLOCKWISE  ↻",      times: 1 },
+  "F'": { action: "Turn the FRONT face",     dir: "COUNTER-CLOCKWISE ↺", times: 1 },
+  "F2": { action: "Turn the FRONT face",     dir: "HALFWAY (×2)",      times: 2 },
+  "B":  { action: "Turn the BACK face",      dir: "CLOCKWISE  ↻",      times: 1 },
+  "B'": { action: "Turn the BACK face",      dir: "COUNTER-CLOCKWISE ↺", times: 1 },
+  "B2": { action: "Turn the BACK face",      dir: "HALFWAY (×2)",      times: 2 },
 };
 
 const MOVE_HOLD = {
-  U: "White facing you · Blue on top",
-  D: "Yellow facing you · Green on top",
-  R: "Red facing you · White on top",
-  L: "Orange facing you · White on top",
-  F: "Green facing you · White on top",
-  B: "Blue facing you · Yellow on top",
+  U: "White face on top · Any colour facing you",
+  D: "Yellow face on top · Any colour facing you",
+  R: "Hold normally · Right side is the Red face",
+  L: "Hold normally · Left side is the Orange face",
+  F: "Green face directly facing you · White on top",
+  B: "Blue face pointing AWAY from you · White on top",
 };
 
-export default function SolutionScreen() {
-  const navigate = useNavigate();
-  
-  const [solution, setSolution] = useState([]);
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [solving, setSolving] = useState(false);
-  const [solveError, setSolveError] = useState(null);
-  
-  // Load and solve cube
-  useEffect(() => {
-    const loadAndSolve = async () => {
-      setLoading(true);
-      setSolveError(null);
-      
-      try {
-        const savedColors = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
-        
-        if (!savedColors) {
-          setSolveError("No cube data found. Please scan your cube first.");
-          setLoading(false);
-          return;
-        }
-        
-        setSolving(true);
-        const moves = await solveCube(savedColors);
-        setSolving(false);
-        
-        if (moves === null) {
-          setSolveError("Could not solve cube. Please check your colors.");
-        } else if (moves.length === 0) {
-          // Cube already solved
-          navigate("/success", { state: { moves: 0, time: 0 } });
-          return;
-        } else {
-          setSolution(moves);
-          setCurrentMoveIndex(0);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        setSolveError("Unexpected error. Please try again.");
-      }
-      
-      setLoading(false);
-    };
-    
-    loadAndSolve();
-  }, [navigate]);
-  
-  const currentMove = solution[currentMoveIndex];
-  const isLastMove = currentMoveIndex === solution.length - 1;
-  
-  const handleNextMove = () => {
-    if (isLastMove) {
-      // Finish solving
-      const elapsed = window.axisTimer?.getElapsed() || 0;
-      const history = JSON.parse(localStorage.getItem("cube_history") || "[]");
-      history.unshift({
-        id: Date.now(),
-        date: new Date().toISOString(),
-        moves: solution.length,
-        time: elapsed,
-      });
-      localStorage.setItem("cube_history", JSON.stringify(history.slice(0, 50)));
-      navigate("/success", { state: { moves: solution.length, time: elapsed } });
-    } else {
-      setCurrentMoveIndex(prev => prev + 1);
-    }
-  };
-  
-  const handlePrevMove = () => {
-    if (currentMoveIndex > 0) {
-      setCurrentMoveIndex(prev => prev - 1);
-    }
-  };
-  
-  // Loading state
-  if (loading || solving) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner} />
-        <p style={styles.loadingText}>
-          {solving ? "Finding solution..." : "Loading..."}
-        </p>
-      </div>
-    );
-  }
-  
-  // Error state
-  if (solveError) {
-    return (
-      <div style={styles.errorContainer}>
-        <div style={styles.errorIcon}>⚠️</div>
-        <p style={styles.errorText}>{solveError}</p>
-        <button style={styles.primaryBtn} onClick={() => navigate("/review")}>
-          Back to Review
-        </button>
-      </div>
-    );
-  }
-  
-  // Main view - show one move at a time
+// Mini cube orientation diagram — shows which face to look at
+function OrientationHint({ move }) {
+  const face = move?.[0];
+  const faceColors = { U:"#f0f0eb", D:"#ffd700", R:"#d22828", L:"#ff6420", F:"#1e7a3c", B:"#1e50b4" };
+  const faceNames  = { U:"TOP", D:"BOTTOM", R:"RIGHT", L:"LEFT", F:"FRONT", B:"BACK" };
+  const color = faceColors[face] || "#64748b";
+  const name  = faceNames[face]  || "";
+
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <span style={styles.stepTag}>Step 03 · Solution</span>
-        <div style={styles.progressBadge}>
-          {currentMoveIndex + 1} / {solution.length}
-        </div>
-      </div>
-      
-      {/* Progress bar */}
-      <div style={styles.progressBar}>
-        <div 
-          style={{
-            ...styles.progressFill,
-            width: `${((currentMoveIndex + 1) / solution.length) * 100}%`
-          }}
-        />
-      </div>
-      
-      {/* Current Move Card */}
-      <div style={styles.moveCard}>
-        <div style={styles.moveNumber}>
-          Move {currentMoveIndex + 1} of {solution.length}
-        </div>
-        
-        <MoveDiagram move={currentMove} size="lg" />
-        
-        <div style={styles.moveNotation}>
-          {currentMove}
-        </div>
-        
-        <div style={styles.moveDescription}>
-          {MOVE_INFO[currentMove]?.desc || "Perform this move"}
-        </div>
-        
-        <div style={styles.holdInstruction}>
-          {MOVE_HOLD[currentMove?.[0]] || ""}
-        </div>
-      </div>
-      
-      {/* Control Buttons */}
-      <div style={styles.controls}>
-        <button
-          style={{
-            ...styles.secondaryBtn,
-            opacity: currentMoveIndex === 0 ? 0.4 : 1
-          }}
-          onClick={handlePrevMove}
-          disabled={currentMoveIndex === 0}
-        >
-          ← Previous
-        </button>
-        
-        <button
-          style={styles.primaryBtn}
-          onClick={handleNextMove}
-        >
-          {isLastMove ? "Finish ✓" : "Next Move →"}
-        </button>
-      </div>
-      
-      {/* Mini move strip for context */}
-      <div style={styles.moveStrip}>
-        {solution.slice(Math.max(0, currentMoveIndex - 2), Math.min(solution.length, currentMoveIndex + 3)).map((move, idx) => {
-          const actualIndex = Math.max(0, currentMoveIndex - 2) + idx;
-          const isCurrent = actualIndex === currentMoveIndex;
-          
-          return (
-            <div
-              key={actualIndex}
-              style={{
-                ...styles.stripBadge,
-                background: isCurrent ? "#e2e8f0" : "rgba(255,255,255,0.05)",
-                color: isCurrent ? "#0a0a0f" : "#64748b",
-                border: isCurrent ? "none" : "1px solid rgba(255,255,255,0.08)",
-              }}
-              onClick={() => setCurrentMoveIndex(actualIndex)}
-            >
-              {move}
-            </div>
-          );
-        })}
-      </div>
-      {/* Temporary test button for solver debugging */}
-      <button 
-        onClick={async () => {
-          const colors = JSON.parse(sessionStorage.getItem("cube_colors"));
-          console.log("Testing solver with current cube...");
-          const result = await solveCube(colors);
-          console.log("Test result:", result);
-        }}
-        style={{ position: 'fixed', bottom: 10, right: 10, zIndex: 9999, background: '#4ade80', padding: '8px 16px', borderRadius: 8, color: '#000' }}
-      >
-        Test Solver
-      </button>
+    <div style={s.orientHint}>
+      <div style={{ ...s.orientDot, background: color }} />
+      <span style={s.orientText}>
+        Moving the <span style={{ color, fontWeight: 700 }}>{name}</span> layer/face
+      </span>
     </div>
   );
 }
 
-const styles = {
-  container: {
+export default function SolutionScreen() {
+  const navigate = useNavigate();
+
+  const [solution,         setSolution]         = useState([]);
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  const [loading,          setLoading]           = useState(true);
+  const [solveError,       setSolveError]        = useState(null);
+  const [done,             setDone]              = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setSolveError(null);
+      try {
+        const saved = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
+        if (!saved) { setSolveError("No cube data found. Please scan your cube first."); setLoading(false); return; }
+        const moves = await solveCube(saved);
+        if (moves === null)     setSolveError("Could not solve — check your colours.");
+        else if (moves.length === 0) navigate("/success", { state: { moves: 0, time: 0 } });
+        else { setSolution(moves); setCurrentMoveIndex(0); }
+      } catch { setSolveError("Unexpected error. Please try again."); }
+      setLoading(false);
+    })();
+  }, [navigate]);
+
+  const currentMove = solution[currentMoveIndex];
+  const plain       = MOVE_PLAIN[currentMove] || {};
+  const isLastMove  = currentMoveIndex === solution.length - 1;
+  const progress    = solution.length ? ((currentMoveIndex + 1) / solution.length) * 100 : 0;
+
+  const handleNext = () => {
+    if (isLastMove) {
+      const elapsed  = window.axisTimer?.getElapsed() || 0;
+      const history  = JSON.parse(localStorage.getItem("cube_history") || "[]");
+      history.unshift({ id: Date.now(), date: new Date().toISOString(), moves: solution.length, time: elapsed });
+      localStorage.setItem("cube_history", JSON.stringify(history.slice(0, 50)));
+      navigate("/success", { state: { moves: solution.length, time: elapsed } });
+    } else {
+      setCurrentMoveIndex(p => p + 1);
+    }
+  };
+
+  const handlePrev = () => { if (currentMoveIndex > 0) setCurrentMoveIndex(p => p - 1); };
+
+  const handleWatch3D = () => {
+    const saved = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
+    navigate("/cube3d", { state: { faceColors: saved } });
+  };
+
+  // ── Loading ───────────────────────────────────────────────
+  if (loading) return (
+    <div style={s.centred}>
+      <div style={s.spinner} />
+      <p style={s.loadingText}>Finding the shortest solution…</p>
+    </div>
+  );
+
+  // ── Error ─────────────────────────────────────────────────
+  if (solveError) return (
+    <div style={s.centred}>
+      <div style={s.errorIcon}>⚠️</div>
+      <p style={s.errorText}>{solveError}</p>
+      <button style={s.primaryBtn} onClick={() => navigate("/review")}>← Back to Review</button>
+    </div>
+  );
+
+  // ── Main ──────────────────────────────────────────────────
+  return (
+    <div style={s.root}>
+
+      {/* ── Top bar ── */}
+      <div style={s.topBar}>
+        <button style={s.backBtn} onClick={() => navigate("/review")}>← Review</button>
+        <span style={s.stepCounter}>{currentMoveIndex + 1} / {solution.length}</span>
+        <button style={s.watchBtn} onClick={handleWatch3D}>3D ▶</button>
+      </div>
+
+      {/* ── Progress bar ── */}
+      <div style={s.progressTrack}>
+        <div style={{ ...s.progressFill, width: `${progress}%` }} />
+      </div>
+
+      {/* ── Move label ── */}
+      <p style={s.moveLabel}>Move {currentMoveIndex + 1} of {solution.length}</p>
+
+      {/* ── Main instruction card ── */}
+      <div style={s.card}>
+
+        {/* Notation badge */}
+        <div style={s.notationBadge}>{currentMove}</div>
+
+        {/* Big plain-English action — single clean line */}
+        <div style={s.actionBlock}>
+          <span style={s.actionText}>{plain.action}</span>
+          <span style={s.dirText}>{plain.dir}</span>
+        </div>
+
+        {/* Diagram — the visual tells everything */}
+        <div style={s.diagramWrap}>
+          <MoveDiagram move={currentMove} size="lg" />
+        </div>
+
+        {/* How to hold */}
+        <div style={s.holdBox}>
+          <span style={s.holdLabel}>📐 How to hold</span>
+          <span style={s.holdText}>{MOVE_HOLD[currentMove?.[0]] || ""}</span>
+        </div>
+      </div>
+      {/* ── Upcoming moves strip ── */}
+      <div style={s.upcomingWrap}>
+        <span style={s.upcomingLabel}>Upcoming</span>
+        <div style={s.strip}>
+          {solution.slice(currentMoveIndex + 1, currentMoveIndex + 6).map((m, i) => (
+            <div key={i} style={{ ...s.stripBadge, opacity: 1 - i * 0.18 }}>{m}</div>
+          ))}
+          {currentMoveIndex + 1 >= solution.length && (
+            <span style={s.doneTag}>🎉 Last move!</span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Nav buttons ── */}
+      <div style={s.navRow}>
+        <button
+          style={{ ...s.navBtn, ...s.prevBtn, opacity: currentMoveIndex === 0 ? 0.3 : 1 }}
+          onClick={handlePrev}
+          disabled={currentMoveIndex === 0}
+        >
+          ← Prev
+        </button>
+        <button style={{ ...s.navBtn, ...s.nextBtn }} onClick={handleNext}>
+          {isLastMove ? "Finish ✓" : "Next →"}
+        </button>
+      </div>
+
+      {/* Spacer for bottom nav */}
+      <div style={{ height: 80 }} />
+    </div>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const s = {
+  root: {
     display: "flex",
     flexDirection: "column",
     minHeight: "100%",
-    padding: "20px",
-    gap: 20,
+    padding: "12px 20px 0",
+    gap: 14,
   },
-  header: {
+  centred: {
     display: "flex",
-    justifyContent: "space-between",
+    flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+    gap: 20,
+    padding: 32,
   },
-  stepTag: {
-    color: "#334155",
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
+  topBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  progressBadge: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 20,
-    padding: "4px 12px",
-    color: "#e2e8f0",
+  backBtn: {
+    background: "none",
+    border: "none",
+    color: "#64748b",
     fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: 0,
+  },
+  stepCounter: {
+    color: "#e2e8f0",
+    fontSize: 14,
     fontWeight: 700,
   },
-  progressBar: {
-    height: 3,
+  watchBtn: {
+    background: "rgba(139,92,246,0.15)",
+    border: "1px solid rgba(139,92,246,0.3)",
+    color: "#a78bfa",
+    fontSize: 12,
+    fontWeight: 700,
+    borderRadius: 8,
+    padding: "5px 12px",
+    cursor: "pointer",
+  },
+  progressTrack: {
+    height: 4,
     background: "rgba(255,255,255,0.06)",
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    background: "#4ade80",
-    borderRadius: 3,
-    transition: "width 0.3s ease",
+    background: "linear-gradient(90deg, #4ade80, #22d3ee)",
+    borderRadius: 4,
+    transition: "width 0.35s ease",
   },
-  moveCard: {
+  moveLabel: {
+    color: "#475569",
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    margin: 0,
+  },
+  card: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -286,113 +269,167 @@ const styles = {
     background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 24,
-    padding: "32px 20px",
+    padding: "24px 20px",
   },
-  moveNumber: {
-    color: "#475569",
+  notationBadge: {
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: "6px 20px",
+    color: "#e2e8f0",
+    fontSize: 28,
+    fontWeight: 900,
+    letterSpacing: "0.04em",
+  },
+  actionBlock: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 4,
+    textAlign: "center",
+  },
+  actionText: {
+    color: "#94a3b8",
+    fontSize: 15,
+    fontWeight: 600,
+  },
+  dirText: {
+    color: "#e2e8f0",
+    fontSize: 20,
+    fontWeight: 800,
+    letterSpacing: "-0.01em",
+  },
+  timesNote: {
+    marginTop: 4,
+    color: "#fbbf24",
+    fontSize: 12,
+    fontWeight: 600,
+    background: "rgba(251,191,36,0.1)",
+    border: "1px solid rgba(251,191,36,0.2)",
+    borderRadius: 8,
+    padding: "3px 10px",
+  },
+  orientHint: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.06)",
+    borderRadius: 10,
+    padding: "7px 14px",
+    alignSelf: "stretch",
+  },
+  orientDot: {
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    flexShrink: 0,
+  },
+  orientText: {
+    color: "#64748b",
     fontSize: 12,
     fontWeight: 500,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
   },
-  moveNotation: {
-    fontSize: 64,
-    fontWeight: 900,
-    color: "#e2e8f0",
-    letterSpacing: "0.02em",
-    lineHeight: 1,
+  diagramWrap: {
+    padding: "8px 0",
   },
-  moveDescription: {
-    color: "#64748b",
-    fontSize: 14,
-    textAlign: "center",
+  holdBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+    background: "rgba(255,255,255,0.02)",
+    border: "1px solid rgba(255,255,255,0.06)",
+    borderRadius: 12,
+    padding: "10px 14px",
+    alignSelf: "stretch",
   },
-  holdInstruction: {
+  holdLabel: {
     color: "#334155",
-    fontSize: 12,
-    textAlign: "center",
-    paddingTop: 8,
-    borderTop: "1px solid rgba(255,255,255,0.06)",
-    width: "100%",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
   },
-  controls: {
+  holdText: {
+    color: "#64748b",
+    fontSize: 13,
+    fontWeight: 500,
+    lineHeight: 1.4,
+  },
+  upcomingWrap: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  upcomingLabel: {
+    color: "#1e293b",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  },
+  strip: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+  },
+  stripBadge: {
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 8,
+    padding: "5px 12px",
+    color: "#475569",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  doneTag: {
+    color: "#4ade80",
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  navRow: {
     display: "flex",
     gap: 12,
   },
-  primaryBtn: {
-    flex: 2,
-    padding: "16px",
+  navBtn: {
+    padding: "15px",
     borderRadius: 16,
-    background: "#e2e8f0",
     border: "none",
-    color: "#0a0a0f",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
+    transition: "opacity 0.2s",
   },
-  secondaryBtn: {
+  prevBtn: {
     flex: 1,
-    padding: "16px",
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.08)",
     color: "#94a3b8",
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
   },
-  moveStrip: {
-    display: "flex",
-    gap: 8,
-    justifyContent: "center",
-    flexWrap: "wrap",
-    padding: "12px",
-    background: "rgba(255,255,255,0.02)",
-    borderRadius: 16,
-  },
-  stripBadge: {
-    padding: "6px 14px",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-    gap: 20,
+  nextBtn: {
+    flex: 2,
+    background: "#e2e8f0",
+    color: "#0a0a0f",
   },
   spinner: {
-    width: 48,
-    height: 48,
-    border: "3px solid rgba(255,255,255,0.1)",
-    borderTop: "3px solid #e2e8f0",
+    width: 44,
+    height: 44,
+    border: "3px solid rgba(255,255,255,0.08)",
+    borderTop: "3px solid #4ade80",
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
   },
-  loadingText: {
-    color: "#64748b",
-    fontSize: 14,
-  },
-  errorContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-    gap: 16,
-    padding: 32,
-  },
-  errorIcon: {
-    fontSize: 48,
-  },
-  errorText: {
-    color: "#f87171",
-    fontSize: 14,
-    textAlign: "center",
+  loadingText: { color: "#64748b", fontSize: 14 },
+  errorIcon:   { fontSize: 44 },
+  errorText:   { color: "#f87171", fontSize: 14, textAlign: "center" },
+  primaryBtn: {
+    padding: "14px 28px",
+    borderRadius: 14,
+    background: "#e2e8f0",
+    border: "none",
+    color: "#0a0a0f",
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
   },
 };

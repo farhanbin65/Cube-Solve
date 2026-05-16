@@ -19,6 +19,96 @@ const HOLD_INSTRUCTIONS = {
   B: "Hold Blue facing camera, Yellow on top — read right to left",
 };
 
+// Mini cube face diagram — inline, emoji-sized
+const FACE_COLORS_MAP = {
+  white: "#f0f0eb",
+  yellow: "#ffd700",
+  red: "#d22828",
+  orange: "#ff6420",
+  green: "#1e7a3c",
+  blue: "#1e50b4",
+};
+
+const FACE_VISUAL = {
+  U: { front: "white", top: "blue", left: "orange", right: "red" },
+  R: { front: "red", top: "white", left: "green", right: "blue" },
+  F: { front: "green", top: "white", left: "orange", right: "red" },
+  D: { front: "yellow", top: "green", left: "orange", right: "red" },
+  L: { front: "orange", top: "white", left: "blue", right: "green" },
+  B: { front: "blue", top: "yellow", left: "red", right: "orange" },
+};
+
+function MiniCubeFace({ faceKey }) {
+  const v = FACE_VISUAL[faceKey];
+  if (!v) return null;
+  const cell = 7; // px per cell
+  const gap = 1;
+  const strip = 3;
+  const grid = cell * 3 + gap * 2;
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "center",
+        verticalAlign: "middle",
+        marginRight: 6,
+      }}
+    >
+      {/* Top strip */}
+      <span
+        style={{
+          display: "block",
+          width: grid,
+          height: strip,
+          background: FACE_COLORS_MAP[v.top],
+          borderRadius: "2px 2px 0 0",
+        }}
+      />
+      <span style={{ display: "flex", alignItems: "center" }}>
+        {/* Left strip */}
+        <span
+          style={{
+            display: "block",
+            width: strip,
+            height: grid,
+            background: FACE_COLORS_MAP[v.left],
+            borderRadius: "2px 0 0 2px",
+          }}
+        />
+        {/* 3×3 grid */}
+        <svg width={grid} height={grid} style={{ display: "block" }}>
+          {Array(9)
+            .fill(0)
+            .map((_, i) => (
+              <rect
+                key={i}
+                x={(i % 3) * (cell + gap)}
+                y={Math.floor(i / 3) * (cell + gap)}
+                width={cell}
+                height={cell}
+                fill={FACE_COLORS_MAP[v.front]}
+                rx={1}
+              />
+            ))}
+        </svg>
+        {/* Right strip */}
+        <span
+          style={{
+            display: "block",
+            width: strip,
+            height: grid,
+            background: FACE_COLORS_MAP[v.right],
+            borderRadius: "0 2px 2px 0",
+          }}
+        />
+      </span>
+      {/* Bottom — no strip needed, bottom face not shown */}
+    </span>
+  );
+}
+
 export default function CaptureScreen() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -310,6 +400,7 @@ export default function CaptureScreen() {
 
       {/* Hint */}
       <p style={s.hint}>
+        <MiniCubeFace faceKey={currentFace.key} />
         {HOLD_INSTRUCTIONS[currentFace.key]}
       </p>
 
