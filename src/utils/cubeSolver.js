@@ -2,9 +2,8 @@ import { faceColorsToString } from "./cubeState";
 
 const SOLVED_STRING = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
 
-export async function solveCube(faceColors, tracker = null) {
-  // If tracker has a directly loaded string, use it (bypasses broken Cube constructor)
-  const cubeStr = tracker?.getLoadedCubeStr() || faceColorsToString(faceColors);
+export async function solveCube(faceColors) {
+  const cubeStr = faceColorsToString(faceColors);
 
   if (!cubeStr) {
     console.error("❌ faceColorsToString failed");
