@@ -108,7 +108,6 @@ function getCurrentCubeState(currentCubies) {
   return faces;
 }
 
-// ── World-space face normal → clicked face ─────────────────
 function getClickedFace(event) {
   if (!event.face || !event.object) return null;
   const normal = event.face.normal.clone();
@@ -122,15 +121,14 @@ function getClickedFace(event) {
 }
 
 // ── CubieScene ─────────────────────────────────────────────
-const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange }, ref) {
+const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange, onMove }, ref) {
   const [cubies, setCubies] = useState(() => buildInitialCubies(faceColors));
-  const cubiesRef = useRef(cubies); // always holds latest cubies
+  const cubiesRef = useRef(cubies);
   const anim = useRef(null);
   const groupRefs = useRef({});
   const queue = useRef([]);
   const busy = useRef(false);
 
-  // Re-init when faceColors changes (e.g. new scan loaded)
   useEffect(() => {
     const initial = buildInitialCubies(faceColors);
     cubiesRef.current = initial;
@@ -146,14 +144,6 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
     anim.current = { ...queue.current.shift(), elapsed: 0, done: false };
   }, []);
 
-  const applyMoveToCube = useCallback((move) => {
-    const def = MOVE_DEF[move];
-    if (!def) return;
-    queue.current.push(def);
-    processQueue();
-  }, [processQueue]);
-
-  // Expose imperative API — uses cubiesRef so always has latest state
   useImperativeHandle(ref, () => ({
     applyMove: (move) => {
       const def = MOVE_DEF[move];
@@ -176,11 +166,9 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
       }
       processQueue();
     },
-    // ✅ reads from ref, not stale closure
     getCurrentState: () => getCurrentCubeState(cubiesRef.current),
   }));
 
-  // Click: world-space normal → face, cubie.pos → layer
   const handleFaceClick = useCallback((face, cubie) => {
     const x = Math.round(cubie.pos.x);
     const y = Math.round(cubie.pos.y);
@@ -196,8 +184,13 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
       if      (z ===  1) move = "F";
       else if (z === -1) move = "B";
     }
-    if (move) applyMoveToCube(move);
-  }, [applyMoveToCube]);
+    if (move) {
+      const def = MOVE_DEF[move];
+      if (def) queue.current.push(def);
+      processQueue();
+      onMove?.(move);
+    }
+  }, [processQueue, onMove]);
 
   useFrame((_, delta) => {
     if (!anim.current) return;
@@ -216,7 +209,6 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
     );
     const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVec, currentAngle);
 
-    // Animate meshes visually
     cubiesRef.current.forEach(c => {
       if (Math.round(c.pos[a.axis]) !== a.layer) return;
       const mesh = groupRefs.current[c.id];
@@ -237,7 +229,6 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
       );
       const finalQuat = new THREE.Quaternion().setFromAxisAngle(axisVec2, a.angle);
 
-      // Update both state and ref atomically
       setCubies(prev => {
         const newCubies = prev.map(c => {
           if (Math.round(c.pos[a.axis]) !== a.layer) return c;
@@ -247,7 +238,7 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange },
             quat: finalQuat.clone().multiply(c.quat),
           };
         });
-        cubiesRef.current = newCubies; // ✅ keep ref in sync
+        cubiesRef.current = newCubies;
         if (onStateChange) onStateChange(getCurrentCubeState(newCubies));
         return newCubies;
       });
@@ -310,7 +301,7 @@ function CubieMesh({ cubie, meshRef, onFaceClick }) {
 }
 
 // ── Main export ────────────────────────────────────────────
-const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange }, ref) {
+const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange, onMove }, ref) {
   const sceneRef = useRef();
 
   useImperativeHandle(ref, () => ({
@@ -334,6 +325,7 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange }, ref) {
         ref={sceneRef}
         faceColors={faceColors}
         onStateChange={onStateChange}
+        onMove={onMove}
       />
 
       <OrbitControls

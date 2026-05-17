@@ -135,7 +135,6 @@ export default function Cube3Dscreen() {
       setIsAutoSolving(false);
       setSolutionMoves([]);
       setCurrentMove("");
-      trackerRef.current?.reset();
       showToast("Cube solved! 🎉", "success", 4000);
       return;
     }
@@ -151,10 +150,9 @@ export default function Cube3Dscreen() {
     setIsAutoSolving(true);
     setCurrentMove("");
     setSolutionMoves([]);
+
     try {
-      // Use the 3D cube's own visual state — always accurate
-      const state = cubeRef.current?.getCurrentState() 
-        || trackerRef.current.getCurrentState();
+      const state = trackerRef.current.getCurrentState();
       const moves = await solveCube(state);
       if (moves === null) { setIsAutoSolving(false); showToast("Invalid cube state", "error"); return; }
       if (moves.length === 0) { setIsAutoSolving(false); showToast("Already solved!", "success"); return; }
@@ -166,8 +164,7 @@ export default function Cube3Dscreen() {
       setIsAutoSolving(false);
       showToast("Solver error", "error");
     }
-  }, [isAutoSolving, moveHistory.length, executeNextMove, showToast]);
-
+  }, [isAutoSolving, executeNextMove, showToast]);
   // ── Loading ───────────────────────────────────────────────
   if (!ready) {
     return (
@@ -218,7 +215,17 @@ export default function Cube3Dscreen() {
 
       {/* ── Canvas ── */}
       <div style={s.canvasWrapper}>
-        <Cube3D key={cubeKey} ref={cubeRef} faceColors={scrambledColors} />
+       <Cube3D
+          key={cubeKey}
+          ref={cubeRef}
+          faceColors={scrambledColors}
+          onMove={(move) => {
+            if (!isAutoSolving) {
+              trackerRef.current?.applyMove(move);
+              setMoveHistory(h => [...h, move]);
+            }
+          }}
+        />
         {/* Overlay hint — fades after solve starts */}
         {moveHistory.length === 0 && !isAutoSolving && (
           <div style={s.canvasHint}>
