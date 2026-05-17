@@ -39,9 +39,9 @@ const MOVE_VISUAL = {
   "F2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"cw2"  },
 
   // B moves — show blue face as front so user can see it, WHOLE FACE gets arrow
-  "B":  { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"cw"   },
-  "B'": { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"ccw"  },
-  "B2": { front:"blue",  top:"yellow",left:"red",    right:"orange",bottom:"white",  highlight:"face", arrow:"cw2"  },
+  "B":  { front:"blue", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"cw"  },
+  "B'": { front:"blue", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"ccw" },
+  "B2": { front:"blue", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"face", arrow:"cw2" },
 };
 
 // Which cells belong to each highlight zone
@@ -53,7 +53,6 @@ const HIGHLIGHT_CELLS = {
   face: [0,1,2,3,4,5,6,7,8],
 };
 
-// Arrow SVG drawn inline in the SVG grid
 function ArrowSVG({ arrow, cellSize, gridSize }) {
   const s   = cellSize;
   const g   = gridSize;
@@ -73,7 +72,7 @@ function ArrowSVG({ arrow, cellSize, gridSize }) {
       strokeLinecap="round" strokeLinejoin="round"/>
   );
 
-  // Row arrows — drawn relative to full grid width, at col centre y
+  // ── ROW ARROWS ──────────────────────────────────────────────
   if (arrow === "right" || arrow === "right2") {
     const y = s * 0.5;
     return <>
@@ -93,149 +92,105 @@ function ArrowSVG({ arrow, cellSize, gridSize }) {
     </>;
   }
 
-  // Col arrows — drawn relative to ONE column width (s), centred in it
-  // The <g transform> already offsets to the right column
+  // ── COL ARROWS ──────────────────────────────────────────────
+  // up = R2 (col2): offset ×2 LEFT to avoid clipping
   if (arrow === "up" || arrow === "up2") {
-    const x = s * 0.5; // centre of THIS column (relative to g transform)
+    const x = s * 0.5;
     return <>
       <Line x1={x} y1={g-pad} x2={x} y2={pad}/>
       <Head points={`${x-head/2},${pad+head} ${x},${pad} ${x+head/2},${pad+head}`}/>
-      {arrow==="up2" && <text x={x+s*0.18} y={g/2} textAnchor="start"
-        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+      {arrow==="up2" && (
+        <text
+          x={x - s * 0.42}
+          y={g / 2}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fill={stroke}
+          fontSize={s*0.38}
+          fontWeight="900"
+        >×2</text>
+      )}
     </>;
   }
+  // down = L2 (col0): offset ×2 RIGHT
   if (arrow === "down" || arrow === "down2") {
-    const x = s * 0.5; // centre of THIS column (relative to g transform)
+    const x = s * 0.5;
     return <>
       <Line x1={x} y1={pad} x2={x} y2={g-pad}/>
       <Head points={`${x-head/2},${g-pad-head} ${x},${g-pad} ${x+head/2},${g-pad-head}`}/>
-      {arrow==="down2" && <text x={x+s*0.18} y={g/2} textAnchor="start"
-        fill={stroke} fontSize={s*0.38} fontWeight="900">×2</text>}
+      {arrow==="down2" && (
+        <text
+          x={x + s * 0.42}
+          y={g / 2}
+          textAnchor="start"
+          dominantBaseline="middle"
+          fill={stroke}
+          fontSize={s*0.38}
+          fontWeight="900"
+        >×2</text>
+      )}
     </>;
   }
+
+  // ── FACE ARROWS (F / B moves) ────────────────────────────────
   if (arrow === "cw" || arrow === "cw2") {
     const r = g * 0.28;
     const cx = mid, cy = mid;
-
-    // Arc: start at top (cx, cy-r), go CW (sweep=1), end near left (cx-r, cy)
-    // We stop the arc slightly before (cx-r, cy) so the arrowhead isn't buried
-    // Tangent at (cx-r, cy) on a CW arc: pointing straight DOWN → angle = 90deg
-
-    // Slightly shorten arc endpoint for clean arrowhead placement
-    const endAngleDeg = 200; // degrees from positive-x axis (SVG), end a bit past left
+    const endAngleDeg = 200;
     const endRad = (endAngleDeg * Math.PI) / 180;
     const ex = cx + r * Math.cos(endRad);
     const ey = cy + r * Math.sin(endRad);
-
-    // Tangent for CW motion at angle θ is (sin θ, -cos θ) ... but SVG Y is flipped
-    // CW in screen coords: tangent = (sin θ, -cos θ)  wait — let's be precise:
-    // Parametric CW: x=cx+r*cos(t), y=cy+r*sin(t), t increasing
-    // dx/dt = -r*sin(t), dy/dt = r*cos(t)  → tangent direction at endAngleDeg:
-    const tx = -Math.sin(endRad); // tangent x component (normalized)
-    const ty =  Math.cos(endRad); // tangent y component
+    const tx = -Math.sin(endRad);
+    const ty =  Math.cos(endRad);
     const arrowAngle = Math.atan2(ty, tx) * (180 / Math.PI);
-
-    return (
-      <>
-        {/* Clockwise arc from top, going right→bottom→left */}
-        <path
-          d={`M ${cx},${cy - r} A ${r},${r} 0 1 1 ${ex},${ey}`}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={sw}
-          strokeLinecap="round"
+    return <>
+      <path
+        d={`M ${cx},${cy - r} A ${r},${r} 0 1 1 ${ex},${ey}`}
+        fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round"
+      />
+      <g transform={`translate(${ex},${ey}) rotate(${arrowAngle})`}>
+        <polygon
+          points={`${head*0.9},0 ${-head*0.5},${-head*0.55} ${-head*0.5},${head*0.55}`}
+          fill={stroke}
         />
-
-        {/* Arrowhead: equilateral triangle, rotated to tangent direction */}
-        <g transform={`translate(${ex},${ey}) rotate(${arrowAngle})`}>
-          {/* Triangle pointing in +x direction before rotation */}
-          <polygon
-            points={`
-              ${head * 0.9},0
-              ${-head * 0.5},${-head * 0.55}
-              ${-head * 0.5},${head * 0.55}
-            `}
-            fill={stroke}
-          />
-        </g>
-
-        {arrow === "cw2" && (
-          <text
-            x={cx + r * 0.25}
-            y={cy + r * 0.35}
-            textAnchor="middle"
-            fill={stroke}
-            fontSize={s * 0.36}
-            fontWeight="900"
-          >
-            ×2
-          </text>
-        )}
-      </>
-    );
+      </g>
+      {arrow==="cw2" && (
+        <text x={cx + r*0.25} y={cy + r*0.35} textAnchor="middle"
+          fill={stroke} fontSize={s*0.36} fontWeight="900">×2</text>
+      )}
+    </>;
   }
-
   if (arrow === "ccw" || arrow === "ccw2") {
     const r = g * 0.28;
     const cx = mid, cy = mid;
-
-    // CCW is the exact inverse: start near left, go CCW (sweep=0), end at top
-    // Mirror of CW: start angle = 200deg, end at 270deg (top)
     const startAngleDeg = 200;
     const startRad = (startAngleDeg * Math.PI) / 180;
     const sx = cx + r * Math.cos(startRad);
     const sy = cy + r * Math.sin(startRad);
-
-    // End at top: (cx, cy-r) = angle 270deg = -90deg
-    const endAngleDeg = 270;
-    const endRad = (endAngleDeg * Math.PI) / 180;
-    const ex = cx + r * Math.cos(endRad); // = cx
-    const ey = cy + r * Math.sin(endRad); // = cy - r
-
-    // CCW parametric: x=cx+r*cos(t), y=cy+r*sin(t), t DECREASING
-    // tangent = (r*sin(t), -r*cos(t))  [negative of CW]
+    const endRad = (270 * Math.PI) / 180;
+    const ex = cx + r * Math.cos(endRad);
+    const ey = cy + r * Math.sin(endRad);
     const tx = Math.sin(endRad);
     const ty = -Math.cos(endRad);
     const arrowAngle = Math.atan2(ty, tx) * (180 / Math.PI);
-
-    return (
-      <>
-        {/* Counter-clockwise arc: same shape as CW but sweep=0 */}
-        <path
-          d={`M ${sx},${sy} A ${r},${r} 0 1 0 ${ex},${ey}`}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={sw}
-          strokeLinecap="round"
+    return <>
+      <path
+        d={`M ${sx},${sy} A ${r},${r} 0 1 0 ${ex},${ey}`}
+        fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round"
+      />
+      <g transform={`translate(${ex},${ey}) rotate(${arrowAngle})`}>
+        <polygon
+          points={`${head*0.9},0 ${-head*0.5},${-head*0.55} ${-head*0.5},${head*0.55}`}
+          fill={stroke}
         />
-
-        {/* Arrowhead at top, pointing in CCW tangent direction (leftward) */}
-        <g transform={`translate(${ex},${ey}) rotate(${arrowAngle})`}>
-          <polygon
-            points={`
-              ${head * 0.9},0
-              ${-head * 0.5},${-head * 0.55}
-              ${-head * 0.5},${head * 0.55}
-            `}
-            fill={stroke}
-          />
-        </g>
-
-        {arrow === "ccw2" && (
-          <text
-            x={cx + r * 0.25}
-            y={cy + r * 0.35}
-            textAnchor="middle"
-            fill={stroke}
-            fontSize={s * 0.36}
-            fontWeight="900"
-          >
-            ×2
-          </text>
-        )}
-      </>
-    );
+      </g>
+      {arrow==="ccw2" && (
+        <text x={cx + r*0.25} y={cy + r*0.35} textAnchor="middle"
+          fill={stroke} fontSize={s*0.36} fontWeight="900">×2</text>
+      )}
+    </>;
   }
+
   return null;
 }
 export default function MoveDiagram({ move, size = "md" }) {
