@@ -64,6 +64,7 @@ export default function Cube3Dscreen() {
   const [currentMove, setCurrentMove]         = useState("");
   const [toasts, setToasts]                   = useState([]);
   const [showNotations, setShowNotations]     = useState(false); // hidden by default
+  const [showScrambleOptions, setShowScrambleOptions] = useState(false);
 
   const showToast = useCallback((message, type = "info", duration = 3000) => {
     const id = Date.now();
@@ -95,12 +96,13 @@ export default function Cube3Dscreen() {
   }, []);
 
   // ── Scramble ──────────────────────────────────────────────
-  const handleScramble = useCallback(() => {
+  const handleScramble = useCallback((count = 20) => {
     if (!trackerRef.current || isAutoSolving) return;
+    setShowScrambleOptions(false);
 
     const scramble = [];
     let last = "";
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < count; i++) {
       let m;
       do { m = ALL_MOVES[Math.floor(Math.random() * ALL_MOVES.length)]; }
       while (m[0] === last);
@@ -108,29 +110,35 @@ export default function Cube3Dscreen() {
       scramble.push(m);
     }
 
-    // Reset tracker and visual cube to solved first
     trackerRef.current.reset();
     cubeRef.current?.reset();
-    setMoveHistory([]);
-    setScrambledColors(buildSolved());
+    window.axisTimer?.reset();
 
-    // Apply scramble moves one by one with delay so user sees animation
     scramble.forEach((move, i) => {
       setTimeout(() => {
+        if (i === 0) setMoveHistory([move]);
+        else setMoveHistory(h => [...h, move]);
         cubeRef.current?.applyMove(move);
         trackerRef.current?.applyMove(move);
-        setMoveHistory(h => [...h, move]);
-      }, i * 150); // 150ms between moves — fast enough to watch, slow enough to see
+      }, i * 150);
     });
 
-    // Arm the timer (reset) after scramble completes so first manual move starts it
-    const scrambleDuration = scramble.length * 150;
+    const scrambleDuration = scramble.length * 150 + 400;
     setTimeout(() => {
-      window.axisTimer?.reset(); // armed, not started
+      window.axisTimer?.reset();
     }, scrambleDuration);
 
-    showToast(`Scrambling — ${scramble.length} moves`, "info");
+    showToast(`Scrambling — ${count} moves`, "info");
   }, [isAutoSolving, showToast]);
+
+  // Close scramble dropdown when clicking outside
+  useEffect(() => {
+    if (!showScrambleOptions) return;
+    const close = () => setShowScrambleOptions(false);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [showScrambleOptions]);
+
 
   // ── Reset ─────────────────────────────────────────────────
   const handleReset = useCallback(() => {
@@ -222,9 +230,35 @@ export default function Cube3Dscreen() {
               {showNotations ? "𝄜" : "𝄜"}
               <span style={{ fontSize:10, marginLeft:3 }}>{showNotations ? "Hide" : "Moves"}</span>
             </button>
-            <button style={s.iconBtn} onClick={handleScramble} disabled={isAutoSolving} title="Scramble">
-              🔀 <span style={{ fontSize:10, marginLeft:2 }}>Scramble</span>
-            </button>
+            {/* ── Scramble button + dropdown ── */}
+            <div style={{ position:"relative" }}>
+              <button
+                style={s.iconBtn}
+                onClick={() => setShowScrambleOptions(o => !o)}
+                disabled={isAutoSolving}
+                title="Scramble"
+              >
+                🔀 <span style={{ fontSize:10, marginLeft:2 }}>Scramble</span>
+                <span style={{ fontSize:9, marginLeft:1, opacity:0.6 }}>▾</span>
+              </button>
+
+              {showScrambleOptions && (
+                <div
+                  style={s.scrambleDropdown}
+                  onPointerDown={e => e.stopPropagation()}
+                >
+                  {[2, 4, 10, 20].map(count => (
+                    <button
+                      key={count}
+                      style={s.scrambleOption}
+                      onClick={() => handleScramble(count)}
+                    >
+                      {count} moves
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button style={s.iconBtn} onClick={handleReset} title="Reset">
               ↺ <span style={{ fontSize:10, marginLeft:2 }}>Reset</span>
             </button>
@@ -362,6 +396,21 @@ const s = {
     border:"1px solid rgba(255,255,255,0.1)",
     color:"#94a3b8", fontSize:13, fontWeight:600,
     cursor:"pointer", transition:"all 0.15s", gap:2,
+    WebkitTapHighlightColor:"transparent",
+  },
+  scrambleDropdown: {
+    position:"absolute", top:"calc(100% + 6px)", right:0,
+    background:"#13131f", border:"1px solid rgba(255,255,255,0.1)",
+    borderRadius:10, overflow:"hidden", zIndex:100,
+    boxShadow:"0 8px 24px rgba(0,0,0,0.5)",
+    display:"flex", flexDirection:"column", minWidth:110,
+  },
+  scrambleOption: {
+    padding:"10px 16px", background:"none",
+    border:"none", borderBottom:"1px solid rgba(255,255,255,0.05)",
+    color:"#e2e8f0", fontSize:13, fontWeight:600,
+    cursor:"pointer", textAlign:"left",
+    transition:"background 0.1s",
     WebkitTapHighlightColor:"transparent",
   },
   subtitle: { color:"#334155", fontSize:11 },
