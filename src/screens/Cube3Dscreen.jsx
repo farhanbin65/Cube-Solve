@@ -97,6 +97,7 @@ export default function Cube3Dscreen() {
   // ── Scramble ──────────────────────────────────────────────
   const handleScramble = useCallback(() => {
     if (!trackerRef.current || isAutoSolving) return;
+
     const scramble = [];
     let last = "";
     for (let i = 0; i < 20; i++) {
@@ -106,13 +107,23 @@ export default function Cube3Dscreen() {
       last = m[0];
       scramble.push(m);
     }
+
+    // Reset tracker and visual cube to solved first
     trackerRef.current.reset();
-    scramble.forEach(m => trackerRef.current.applyMove(m));
-    const scrambledState = trackerRef.current.getCurrentState();
-    setScrambledColors(scrambledState);
-    setCubeKey(k => k + 1);
-    setMoveHistory(scramble);
-    showToast(`Scrambled — ${scramble.length} moves`, "info");
+    cubeRef.current?.reset();
+    setMoveHistory([]);
+    setScrambledColors(buildSolved());
+
+    // Apply scramble moves one by one with delay so user sees animation
+    scramble.forEach((move, i) => {
+      setTimeout(() => {
+        cubeRef.current?.applyMove(move);
+        trackerRef.current?.applyMove(move);
+        setMoveHistory(h => [...h, move]);
+      }, i * 150); // 150ms between moves — fast enough to watch, slow enough to see
+    });
+
+    showToast(`Scrambling — ${scramble.length} moves`, "info");
   }, [isAutoSolving, showToast]);
 
   // ── Reset ─────────────────────────────────────────────────
