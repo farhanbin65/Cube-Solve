@@ -149,8 +149,6 @@ export default function CaptureScreen() {
   }, []);
 
   useEffect(() => {
-    // Start timer on first mount
-    if (window.axisTimer) window.axisTimer.start();
     startCamera();
     return () => stopCamera();
   }, [startCamera, stopCamera]);

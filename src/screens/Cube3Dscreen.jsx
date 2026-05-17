@@ -123,6 +123,12 @@ export default function Cube3Dscreen() {
       }, i * 150); // 150ms between moves — fast enough to watch, slow enough to see
     });
 
+    // Arm the timer (reset) after scramble completes so first manual move starts it
+    const scrambleDuration = scramble.length * 150;
+    setTimeout(() => {
+      window.axisTimer?.reset(); // armed, not started
+    }, scrambleDuration);
+
     showToast(`Scrambling — ${scramble.length} moves`, "info");
   }, [isAutoSolving, showToast]);
 
@@ -137,12 +143,13 @@ export default function Cube3Dscreen() {
     trackerRef.current.reset();
     setScrambledColors(buildSolved());
     setCubeKey(k => k + 1);
+    window.axisTimer?.reset();
     showToast("Reset to solved", "info");
-  }, [showToast]);
-
+  }, [showToast]);  
   // ── Auto solve ────────────────────────────────────────────
   const executeNextMove = useCallback((moves, index) => {
     if (index >= moves.length) {
+      window.axisTimer?.stop();
       setIsAutoSolving(false);
       setSolutionMoves([]);
       setCurrentMove("");
@@ -158,9 +165,11 @@ export default function Cube3Dscreen() {
 
   const autoSolve = useCallback(async () => {
     if (!trackerRef.current || isAutoSolving) return;
-    setIsAutoSolving(true);
-    setCurrentMove("");
-    setSolutionMoves([]);
+      setIsAutoSolving(true);
+      setCurrentMove("");
+      setSolutionMoves([]);
+      window.axisTimer?.reset();
+      window.axisTimer?.start();
 
     try {
       const state = trackerRef.current.getCurrentState();
@@ -234,6 +243,10 @@ export default function Cube3Dscreen() {
             if (!isAutoSolving) {
               trackerRef.current?.applyMove(move);
               setMoveHistory(h => [...h, move]);
+              // Start timer on first move after scramble
+              if (!window.axisTimer?.isRunning) {
+                window.axisTimer?.start();
+              }
             }
           }}
         />

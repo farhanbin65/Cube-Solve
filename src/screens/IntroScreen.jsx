@@ -42,7 +42,6 @@ export default function IntroScreen() {
 
       <div style={s.ctaWrapper}>
         <button style={s.primaryBtn} onClick={() => {
-          if (window.axisTimer) window.axisTimer.start();
           navigate("/capture");
         }}>
           📷 Scan with camera
@@ -50,7 +49,6 @@ export default function IntroScreen() {
         <button style={s.secondaryBtn} onClick={() => {
           sessionStorage.removeItem("cube_colors");
           sessionStorage.removeItem("cube_faces");
-          if (window.axisTimer) window.axisTimer.start();
           navigate("/review");
         }}>
           ✏️ Enter manually

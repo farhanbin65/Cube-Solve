@@ -220,7 +220,6 @@ const handleTileClick = (faceKey, cellIndex, e) => {
   const handleRescan = () => {
     sessionStorage.removeItem("cube_colors");
     sessionStorage.removeItem("cube_faces");
-    if (window.axisTimer) window.axisTimer.reset();
     navigate("/capture");
   };
 

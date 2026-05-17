@@ -22,8 +22,9 @@ export default function AppShell({ children }) {
       stop:  () => setTimerActive(false),
       reset: () => { setElapsed(0); setTimerActive(false); },
       getElapsed: () => elapsed,
+      isRunning: timerActive,
     };
-  }, [elapsed]);
+  }, [elapsed, timerActive]);
 
   useEffect(() => {
     if (timerActive) {
