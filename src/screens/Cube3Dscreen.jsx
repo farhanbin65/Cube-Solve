@@ -72,6 +72,22 @@ export default function Cube3Dscreen() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
   }, []);
 
+
+  const saveToHistory = useCallback((timeSeconds, moveCount) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem("cube_history") || "[]");
+    const newEntry = {
+      id: Date.now(),
+      time: timeSeconds,
+      moves: moveCount,
+      date: new Date().toISOString(),
+    };
+    localStorage.setItem("cube_history", JSON.stringify([newEntry, ...existing]));
+  } catch (e) {
+    console.error("Failed to save history:", e);
+  }
+}, []);
+
   // ── Init tracker ──────────────────────────────────────────
   useEffect(() => {
     createStateTracker().then(t => {
@@ -158,6 +174,8 @@ export default function Cube3Dscreen() {
   const executeNextMove = useCallback((moves, index) => {
     if (index >= moves.length) {
       window.axisTimer?.stop();
+      const elapsed = window.axisTimer?.getElapsed() || 0;
+      saveToHistory(elapsed, moves.length);
       setIsAutoSolving(false);
       setSolutionMoves([]);
       setCurrentMove("");
@@ -169,7 +187,7 @@ export default function Cube3Dscreen() {
     setCurrentSolveIdx(index);
     setCurrentMove(moves[index]);
     solveTimerRef.current = setTimeout(() => executeNextMove(moves, index + 1), 420);
-  }, [showToast]);
+  }, [showToast, saveToHistory]);
 
   const autoSolve = useCallback(async () => {
     if (!trackerRef.current || isAutoSolving) return;
