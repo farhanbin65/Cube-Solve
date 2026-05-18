@@ -11,7 +11,7 @@
 
 **A precision AI-powered Rubik's Cube solver with camera scanning and step-by-step visualization**
 
-[Features](#-features) • [Demo](#-getting-started) • [Tech Stack](#-tech-stack) • [Installation](#-installation) • [Usage](#-usage)
+[Features](#-features) • [Demo](#-getting-started) • [Tech Stack](#-tech-stack) •   [Usage](#-usage)
 
 </div>
 
