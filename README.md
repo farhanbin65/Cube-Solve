@@ -1,4 +1,4 @@
-# 🧩 Cube Solve
+# Cube Solve
 
 <div align="center">
 
@@ -17,25 +17,22 @@
 
 ---
 
-## 📋 Overview
+## Overview
 
 **Cube Solve** is a full-stack web application that leverages computer vision and advanced solving algorithms to help users solve Rubik's cubes. Scan all six faces of your cube with your device camera, and the application will generate an optimal solution using the Kociemba algorithm, displaying moves in a beautiful 3D visualization.
 
-Built as a **Computer Science portfolio project** demonstrating proficiency in modern web technologies, real-time graphics rendering, algorithm implementation, and mobile-first UI design.
-
 ---
 
-## ✨ Features
+## Features
 
-- 📷 **Camera Scanning** - Real-time color detection from device camera
-- 🤖 **Optimal Solving** - Uses Kociemba algorithm (solves any cube in ≤20 moves)
-- 🎨 **3D Visualization** - Interactive Three.js cube rendering with smooth animations
-- ✋ **Manual Input** - Enter cube colors manually if camera scanning isn't available
-- 📊 **Solution Review** - Step-by-step move guide with visual feedback
-- 💾 **History Tracking** - Save and review past cube solutions
-- ⚙️ **Settings Panel** - Customize preferences and reset data
-- 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- ♿ **Accessibility** - Semantic HTML and keyboard navigation support
+- **Camera Scanning** - Real-time color detection from device camera
+- **Optimal Solving** - Uses Kociemba algorithm (solves any cube in ≤20 moves)
+- **3D Visualization** - Interactive Three.js cube rendering with smooth animations
+- **Manual Input** - Enter cube colors manually if camera scanning isn't available
+- **Solution Review** - Step-by-step move guide with visual feedback
+- **History Tracking** - Save and review past cube solutions
+- **Settings Panel** - Customize preferences and reset data
+- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
 
 ---
 
@@ -60,107 +57,22 @@ Built as a **Computer Science portfolio project** demonstrating proficiency in m
 
 ---
 
-## 📦 Installation
-
-### Prerequisites
-- Node.js 16+ and npm (or yarn/pnpm)
-- Git
-- A modern web browser with camera support (for scanning feature)
-
-### Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/farhanbin65/Cube-Solve.git
-   cd Cube-Solve
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   - Navigate to `http://localhost:5173` (Vite default)
-   - The app will hot-reload on file changes
-
----
-
-## 🚀 Usage
+##  Usage
 
 ### Getting Started
 
 1. **Welcome Screen** - Read the 4-step process overview
 2. **Choose Input Method**
-   - 📷 **Scan with Camera**: Allow camera access and scan each face
-   - ✏️ **Enter Manually**: Input cube colors through the UI
+   -  **Scan with Camera**: Allow camera access and scan each face
+   -  **Enter Manually**: Input cube colors through the UI
 3. **Review Data** - Verify all detected/entered colors are correct
 4. **Generate Solution** - Algorithm computes optimal move sequence
 5. **Follow Guide** - Watch the 3D cube and follow step-by-step instructions
 6. **Success!** - Celebrate your solved cube
 
-### Available Scripts
-
-```bash
-npm run dev       # Start development server with HMR
-npm run build     # Optimize and bundle for production
-npm run preview   # Preview production build locally
-npm run lint      # Check code quality with ESLint
-```
-
 ---
 
-## 📁 Project Structure
-
-```
-Cube-Solve/
-├── src/
-│   ├── components/
-│   │   ├── Cube3D.jsx          # 3D cube renderer with Three.js
-│   │   └── MoveDiagram.jsx     # Move notation visualization
-│   ├── screens/
-│   │   ├── IntroScreen.jsx     # Welcome and instructions
-│   │   ├── CaptureScreen.jsx   # Camera-based color detection
-│   │   ├── Cube3Dscreen.jsx    # Interactive 3D cube view
-│   │   ├── ReviewScreen.jsx    # Verify detected colors
-│   │   ├── SolutionScreen.jsx  # Display solving steps
-│   │   ├── SuccessScreen.jsx   # Completion celebration
-│   │   ├── HistoryScreen.jsx   # Past solutions
-│   │   └── SettingsScreen.jsx  # User preferences
-│   ├── utils/
-│   │   ├── cubeSolver.js       # Kociemba algorithm wrapper
-│   │   └── cubeState.js        # Cube state management
-│   ├── App.jsx                 # Router setup
-│   ├── AppShell.jsx            # Main layout wrapper
-│   └── main.jsx                # React entry point
-├── public/                     # Static assets
-├── package.json               # Dependencies and scripts
-├── vite.config.js            # Vite configuration
-├── eslint.config.js          # Linting rules
-└── README.md                 # This file
-```
-
----
-
-## 🎓 Learning Outcomes
-
-This project demonstrates:
-
-- ✅ **Frontend Development**: React hooks, state management, routing
-- ✅ **3D Graphics**: Three.js, WebGL, camera controls, animations
-- ✅ **Algorithm Integration**: WASM, async operations, error handling
-- ✅ **Mobile Development**: Camera API, responsive design, touch events
-- ✅ **Code Quality**: ESLint, modular architecture, component reusability
-- ✅ **Performance**: Lazy loading, code splitting, optimized renders
-
----
-
-## 🔧 Configuration
+## Configuration
 
 ### Vite
 - Fast HMR for development
@@ -179,10 +91,9 @@ This project demonstrates:
 
 ---
 
-## 🚧 Future Enhancements
+## Future Enhancements
 
 - [ ] Two-phase solving algorithm option (beginner-friendly)
-- [ ] Cube scramble generator
 - [ ] Multiple language support
 - [ ] Dark/Light theme toggle
 - [ ] Share solutions via URL
@@ -191,22 +102,21 @@ This project demonstrates:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👤 Author
+## Author
 
 **Farhan Bin Hossain** | Computer Science Student
-- 📧 Email: [Your Email]
-- 💼 LinkedIn: [Your LinkedIn]
-- 🐙 GitHub: [@farhanbin65](https://github.com/farhanbin65)
+- Portfolio: [Farhan Bin Hossain](https://www.farhanbin.dev)
+- GitHub: [@farhanbin65](https://github.com/farhanbin65)
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **Kociemba Algorithm** - Optimal Rubik's cube solving
 - **Three.js Community** - 3D graphics and examples
@@ -214,9 +124,3 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **Vite Team** - Ultra-fast build tooling
 
 ---
-
-<div align="center">
-
-**If you found this project helpful, please consider giving it a ⭐ on GitHub!**
-
-</div>
