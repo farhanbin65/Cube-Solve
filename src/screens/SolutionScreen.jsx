@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import MoveDiagram from "../components/MoveDiagram";
 import { solveCube } from "../utils/cubeSolver";
 
@@ -61,21 +61,30 @@ export default function SolutionScreen() {
   const [solveError,       setSolveError]        = useState(null);
   const [done,             setDone]              = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
     (async () => {
       setLoading(true);
       setSolveError(null);
       try {
-        const saved = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
-        if (!saved) { setSolveError("No cube data found. Please scan your cube first."); setLoading(false); return; }
-        const moves = await solveCube(saved);
+        const cubeStr = location.state?.cubeStr || sessionStorage.getItem("cube_string");
+        let moves = null;
+        if (cubeStr) {
+          moves = await solveCube(cubeStr);
+        } else {
+          const saved = JSON.parse(sessionStorage.getItem("cube_colors") || "null");
+          if (!saved) { setSolveError("No cube data found. Please scan your cube first."); setLoading(false); return; }
+          moves = await solveCube(saved);
+        }
+
         if (moves === null)     setSolveError("Could not solve — check your colours.");
         else if (moves.length === 0) navigate("/success", { state: { moves: 0, time: 0 } });
         else { setSolution(moves); setCurrentMoveIndex(0); }
       } catch { setSolveError("Unexpected error. Please try again."); }
       setLoading(false);
     })();
-  }, [navigate]);
+  }, [navigate, location]);
 
   const currentMove = solution[currentMoveIndex];
   const plain       = MOVE_PLAIN[currentMove] || {};

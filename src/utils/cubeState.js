@@ -1,9 +1,11 @@
+import { getKociembaWasm } from "./wasmLoader";
+
 const FACE_TO_COLOR = {
   U: "white", R: "red", F: "green",
   D: "yellow", L: "orange", B: "blue",
 };
 
-function cubeStringToFaceColors(str) {
+export function cubeStringToFaceColors(str) {
   const faces = ["U", "R", "F", "D", "L", "B"];
   const result = {};
   for (let i = 0; i < 6; i++) {
@@ -23,12 +25,8 @@ export function buildSolved() {
   };
 }
 
-// Converts faceColors object → 54-char kociemba string
-// Works with canonical color names ("white", "red"...) since centers define the mapping
 export function faceColorsToString(faceColors) {
   const order = ["U", "R", "F", "D", "L", "B"];
-
-  // Build color → face letter map from the 6 center stickers
   const colorToFace = {};
   for (const face of order) {
     const center = faceColors[face]?.[4];
@@ -36,63 +34,44 @@ export function faceColorsToString(faceColors) {
     colorToFace[center] = face;
   }
   if (Object.keys(colorToFace).length !== 6) return null;
-
   let str = "";
   for (const face of order) {
     const tiles = faceColors[face] || [];
     for (let i = 0; i < 9; i++) {
       const letter = colorToFace[tiles[i]];
-      if (!letter) {
-        console.error(`faceColorsToString: unmapped color "${tiles[i]}" on ${face}[${i}]`);
-        return null;
-      }
+      if (!letter) return null;
       str += letter;
     }
   }
   return str;
 }
 
-let CubeClass = null;
-
 async function getCubeClass() {
-  if (!CubeClass) {
-    const mod = await import("kociemba-wasm");
-    CubeClass = mod.Cube;
-  }
-  return CubeClass;
+  const m = await getKociembaWasm();
+  return m.Cube;
 }
-
 
 export async function createStateTracker() {
   const Cube = await getCubeClass();
   let cube = new Cube();
+  // Tracks the last known faceColors — updated on load and after every move
+  let _faceColors = cubeStringToFaceColors(cube.toString());
 
   return {
     applyMove(move) {
-      const base = move[0];                          // "R", "U", "F" etc.
-      const times = move.includes("2") ? 2           // R2 = 2 quarter turns
-                  : move.includes("'") ? 3           // R' = 3 quarter turns
-                  : 1;                               // R  = 1 quarter turn
-      for (let i = 0; i < times; i++) cube.action(base);
-      return cubeStringToFaceColors(cube.toString());
-    },
-    applyMove(move) {
       const base = move[0];
-      const times = move.includes("2") ? 2 : move.includes("'") ? 3 : 1;
-      console.log("TRACKER:", move, "base:", base, "times:", times);
+      const times = move.includes("2") ? 2
+                  : move.includes("'") ? 3
+                  : 1;
       for (let i = 0; i < times; i++) cube.action(base);
-      const state = cube.toString();
-      console.log("TRACKER STATE:", state);
-      return cubeStringToFaceColors(state);
-    },
-    getCurrentState() {
-      const str = cube.toString();
-      console.log("🔍 tracker state:", str);
-      return cubeStringToFaceColors(str);
+      // Keep _faceColors in sync after every move
+      _faceColors = cubeStringToFaceColors(cube.toString());
+      return _faceColors;
     },
 
     reset() {
       cube = new Cube();
+      _faceColors = cubeStringToFaceColors(cube.toString());
     },
 
     loadFromFaceColors(faceColors) {
@@ -101,27 +80,42 @@ export async function createStateTracker() {
         console.error("loadFromFaceColors: invalid faceColors");
         return false;
       }
-
-      // new Cube(str) is broken in kociemba-wasm — ignores the input.
-      // Instead: solve the SOLVED cube to find what moves reach this state,
-      // then replay those moves. But that's circular.
-      // Real fix: use kociemba solve() on cubeStr to get solution,
-      // then apply the INVERSE moves to a fresh cube to reach the state.
-
-      // Simplest working fix: store the cubeStr and use it directly in solveCube
-      // bypassing the tracker for the initial scanned state.
+      // Store both the raw string and faceColors
       this._loadedCubeStr = cubeStr;
-      cube = new Cube(); // reset to solved
+      _faceColors = faceColors; // ← keep the exact incoming colors
+      cube = new Cube();        // reset for future move tracking
       return true;
     },
 
-    getCurrentState() {
-      const str = cube.toString();
-      return cubeStringToFaceColors(str);
+    loadFromCubeString(cubeStr) {
+      if (!cubeStr) {
+        console.error("loadFromCubeString: missing cubeStr");
+        return false;
+      }
+      try {
+        cube = new Cube(cubeStr);
+        _faceColors = cubeStringToFaceColors(cubeStr);
+        this._loadedCubeStr = cubeStr;
+        return true;
+      } catch (err) {
+        console.error("loadFromCubeString: invalid cubeStr", err);
+        return false;
+      }
     },
 
-    getLoadedCubeStr() {
-      return this._loadedCubeStr || null;
+    // Always returns faceColors object — for 3D visual and Review screen
+    getCurrentState() {
+      return _faceColors;
+    },
+
+    // Returns raw kociemba string — for solver only
+    getCurrentStateString() {
+      if (this._loadedCubeStr) {
+        const str = this._loadedCubeStr;
+        this._loadedCubeStr = null;
+        return str;
+      }
+      return cube.toString();
     },
   };
 }

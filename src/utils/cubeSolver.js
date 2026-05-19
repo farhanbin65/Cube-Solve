@@ -1,21 +1,16 @@
 import { faceColorsToString } from "./cubeState";
+import { getKociembaWasm } from "./wasmLoader";
 
 const SOLVED_STRING = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
 
-let kociembaModule = null;
-
 async function getKociemba() {
-  if (!kociembaModule) {
-    kociembaModule = await import("kociemba-wasm");
-    if (typeof kociembaModule.init === "function") {
-      await kociembaModule.init();
-    }
-  }
-  return kociembaModule;
+  return getKociembaWasm();
 }
 
-export async function solveCube(faceColors) {
-  const cubeStr = faceColorsToString(faceColors);
+export async function solveCube(faceColorsOrString) {
+  const cubeStr = typeof faceColorsOrString === "string"
+    ? faceColorsOrString
+    : faceColorsToString(faceColorsOrString);
 
   if (!cubeStr) {
     console.error("❌ faceColorsToString failed");

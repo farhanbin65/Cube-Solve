@@ -8,6 +8,7 @@ import SuccessScreen  from "./screens/SuccessScreen";
 import HistoryScreen  from "./screens/HistoryScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import Cube3Dscreen from "./screens/Cube3Dscreen";
+import "./utils/cubeSolver"; 
 
 export default function App() {
   return (

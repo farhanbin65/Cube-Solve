@@ -20,18 +20,33 @@ const FACE_TO_COLOR = {
   L: "orange", F: "green", B: "blue"
 };
 
+// Mapping from scan ordering (how CaptureScreen reads faces) to
+// the 3D cube's sticker ordering used here. Indexes map scanned
+// positions (0..8) to the positions expected by the 3D renderer.
+const SCAN_TO_3D = {
+  U: [0,1,2,3,4,5,6,7,8], // no change
+  R: [2,1,0,5,4,3,8,7,6], // mirror horizontally
+  F: [0,1,2,3,4,5,6,7,8], // no change
+  D: [6,7,8,3,4,5,0,1,2], // mirror vertically
+  L: [2,1,0,5,4,3,8,7,6], // mirror horizontally
+  B: [0,1,2,3,4,5,6,7,8], // no change
+};
+
 function getStickerColor(faceColors, x, y, z, direction) {
   let face, row, col;
   if      (direction === "+y" && y ===  1) { face = "U"; row = z+1;  col = x+1;  }
   else if (direction === "-y" && y === -1) { face = "D"; row = -z+1; col = x+1;  }
-  else if (direction === "+x" && x ===  1) { face = "R"; row = -y+1; col = -z+1; }
-  else if (direction === "-x" && x === -1) { face = "L"; row = -y+1; col = z+1;  }
+  else if (direction === "+x" && x ===  1) { face = "R"; row = -y+1; col = z+1;  }
+  else if (direction === "-x" && x === -1) { face = "L"; row = -y+1; col = -z+1; }
   else if (direction === "+z" && z ===  1) { face = "F"; row = -y+1; col = x+1;  }
-  else if (direction === "-z" && z === -1) { face = "B"; row = -y+1; col = -x+1; }
+  else if (direction === "-z" && z === -1) { face = "B"; row = y+1;  col = -x+1; }
   else return BLACK;
   const idx = row * 3 + col;
   const tiles = faceColors?.[face] || [];
-  return COLOR_HEX[tiles[idx]] || BLACK;
+  const remappedIdx = (SCAN_TO_3D[face] && typeof SCAN_TO_3D[face][idx] === "number")
+    ? SCAN_TO_3D[face][idx]
+    : idx;
+  return COLOR_HEX[tiles[remappedIdx]] || BLACK;
 }
 
 const MOVE_DEF = {
@@ -95,10 +110,10 @@ function getCurrentCubeState(currentCubies) {
     const [x, y, z] = [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)];
     if (y ===  1) { const idx = (-z+1)*3+(x+1);  const n = getColorNameFromHex(colors[2]); if (n) faces.U[idx] = n; }
     if (y === -1) { const idx = ( z+1)*3+(x+1);  const n = getColorNameFromHex(colors[3]); if (n) faces.D[idx] = n; }
-    if (x ===  1) { const idx = (-y+1)*3+(-z+1); const n = getColorNameFromHex(colors[0]); if (n) faces.R[idx] = n; }
-    if (x === -1) { const idx = (-y+1)*3+( z+1); const n = getColorNameFromHex(colors[1]); if (n) faces.L[idx] = n; }
+    if (x ===  1) { const idx = (-y+1)*3+( z+1); const n = getColorNameFromHex(colors[0]); if (n) faces.R[idx] = n; }
+    if (x === -1) { const idx = (-y+1)*3+(-z+1); const n = getColorNameFromHex(colors[1]); if (n) faces.L[idx] = n; }
     if (z ===  1) { const idx = (-y+1)*3+(x+1);  const n = getColorNameFromHex(colors[4]); if (n) faces.F[idx] = n; }
-    if (z === -1) { const idx = (-y+1)*3+(-x+1); const n = getColorNameFromHex(colors[5]); if (n) faces.B[idx] = n; }
+    if (z === -1) { const idx = ( y+1)*3+(-x+1); const n = getColorNameFromHex(colors[5]); if (n) faces.B[idx] = n; }
   });
   for (const [face, stickers] of Object.entries(faces)) {
     for (let i = 0; i < 9; i++) {

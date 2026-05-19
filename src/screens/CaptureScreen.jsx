@@ -16,7 +16,7 @@ const HOLD_INSTRUCTIONS = {
   F: "Hold Green facing camera, White on top",
   D: "Hold Yellow facing camera, Green on top",
   L: "Hold Orange facing camera, White on top",
-  B: "Hold Blue facing camera, Yellow on top — read right to left",
+  B: "Hold Blue facing camera, White on top",
 };
 
 // Mini cube face diagram — inline, emoji-sized
@@ -35,7 +35,7 @@ const FACE_VISUAL = {
   F: { front: "green", top: "white", left: "orange", right: "red" },
   D: { front: "yellow", top: "green", left: "orange", right: "red" },
   L: { front: "orange", top: "white", left: "blue", right: "green" },
-  B: { front: "blue", top: "yellow", left: "red", right: "orange" },
+  B: { front: "blue", top: "white", left: "red", right: "orange" },
 };
 
 function MiniCubeFace({ faceKey }) {
@@ -114,6 +114,8 @@ export default function CaptureScreen() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const faceColorsRef = useRef({});
+  const capturedFacesRef = useRef({});
 
   const [faceIndex, setFaceIndex] = useState(0);
   const [cameraError, setCameraError] = useState(null);
@@ -198,53 +200,39 @@ export default function CaptureScreen() {
   ];
 
   function detectColor(r, g, b) {
-    // Normalize brightness first
     const brightness = (r + g + b) / 3;
-    const scale = brightness > 0 ? 128 / brightness : 1;
-    const nr = Math.min(255, r * scale);
-    const ng = Math.min(255, g * scale);
-    const nb = Math.min(255, b * scale);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const saturation = max > 0 ? (max - min) / max : 0;
 
-    // Use both raw and normalized for matching
-    let bestName = "white";
-    let bestDist = Infinity;
+    // White — low saturation, high brightness
+    if (saturation < 0.2 && brightness > 130) return "white";
 
-    for (const ref of COLOR_REFS) {
-      // Raw distance
-      const rawDist = Math.sqrt(
-        (r - ref.rgb[0]) ** 2 + (g - ref.rgb[1]) ** 2 + (b - ref.rgb[2]) ** 2
-      );
-      if (rawDist < bestDist) {
-        bestDist = rawDist;
-        bestName = ref.name;
-      }
+    // Yellow — high red, high green, low blue
+    if (r > 150 && g > 130 && b < 100 && r > b * 2 && g > b * 1.5) return "yellow";
+
+    // Orange — high red, medium green, very low blue
+    if (r > 160 && g > 50 && g < 160 && b < 80 && r > g * 1.3) return "orange";
+
+    // Red — high red, low green, low blue
+    if (r > 140 && g < 80 && b < 80 && r > g * 2 && r > b * 2) return "red";
+
+    // Green — high green dominant
+    if (g > r * 1.3 && g > b * 1.3 && g > 80) return "green";
+
+    // Blue — high blue dominant
+    if (b > r * 1.3 && b > g * 1.1 && b > 60) return "blue";
+
+    // Fallback — find closest by simple comparisons
+    if (r > g && r > b) {
+      if (g > b * 1.5) return "orange";
+      return "red";
     }
+    if (g > r && g > b) return "green";
+    if (b > r && b > g) return "blue";
+    if (r > 150 && g > 150) return "yellow";
 
-    // Heuristic overrides for common misdetections
-    // If it looks greyish/whitish
-    const maxChannel = Math.max(r, g, b);
-    const minChannel = Math.min(r, g, b);
-    const saturation = maxChannel > 0 ? (maxChannel - minChannel) / maxChannel : 0;
-
-    if (saturation < 0.15 && brightness > 140) return "white";
-    if (saturation < 0.15 && brightness <= 140) return "white"; // dark white still white
-
-    // Strong green detection
-    if (g > r * 1.4 && g > b * 1.4 && g > 80) return "green";
-
-    // Strong blue detection
-    if (b > r * 1.5 && b > g * 1.2 && b > 60) return "blue";
-
-    // Strong red detection
-    if (r > g * 1.8 && r > b * 1.8) return "red";
-
-    // Orange vs red: orange has significant green channel
-    if (r > 150 && g > 60 && g < 140 && b < 60) return "orange";
-
-    // Yellow: high red + high green, low blue
-    if (r > 180 && g > 160 && b < 80) return "yellow";
-
-    return bestName;
+    return "white";
   };
 
   const extractColors = (canvas) => {
@@ -252,23 +240,29 @@ export default function CaptureScreen() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Sample from the centre 60% of the frame (where grid overlay is)
-    const gridLeft   = w * 0.2;
-    const gridTop    = h * 0.2;
-    const gridWidth  = w * 0.6;
-    const gridHeight = h * 0.6;
+    const gridLeft   = w * 0.25;
+    const gridTop    = h * 0.25;
+    const gridWidth  = w * 0.50;
+    const gridHeight = h * 0.50;
     const cellW = gridWidth  / 3;
     const cellH = gridHeight / 3;
 
     const colors = [];
+    const debugInfo = [];
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const cx = Math.round(gridLeft + (col + 0.5) * cellW);
         const cy = Math.round(gridTop  + (row + 0.5) * cellH);
-        const [r, g, b] = sampleColor(ctx, cx, cy);
-        colors.push(detectColor(r, g, b));
+        const [r, g, b] = sampleColor(ctx, cx, cy, 6);
+        const detected = detectColor(r, g, b);
+        debugInfo.push(`[${row},${col}] rgb(${r},${g},${b}) → ${detected}`);
+        colors.push(detected);
       }
     }
+
+    console.log(`=== ${currentFace.key} face scan ===`);
+    debugInfo.forEach((d) => console.log(d));
+
     return colors;
   };
 
@@ -300,13 +294,53 @@ export default function CaptureScreen() {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0);
 
-    const imageData = canvas.toDataURL("image/jpeg", 0.9);
-  const colors = extractColors(canvas);
-  const fixedColors = forceCorrectCentre(colors, currentFace.key);
-  const faceKey = currentFace.key;
+    // Draw debug dots on canvas to show sampling points
+    const w = canvas.width;
+    const h = canvas.height;
+    const gridLeft = w * 0.25;
+    const gridTop = h * 0.25;
+    const gridWidth = w * 0.50;
+    const gridHeight = h * 0.50;
+    const cellW = gridWidth / 3;
+    const cellH = gridHeight / 3;
 
-    setCapturedFaces((p) => ({ ...p, [faceKey]: imageData }));
-  setFaceColors((p) => ({ ...p, [faceKey]: fixedColors }));
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const cx = Math.round(gridLeft + (col + 0.5) * cellW);
+        const cy = Math.round(gridTop + (row + 0.5) * cellH);
+        // Draw red dot at sampling point
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Save debug image
+    const debugImg = canvas.toDataURL("image/jpeg", 0.9);
+    console.log("Debug image (copy to browser):", debugImg.substring(0, 100));
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.9);
+    const colors = extractColors(canvas);
+    const fixedColors = forceCorrectCentre(colors, currentFace.key);
+    const faceKey = currentFace.key;
+
+    const updatedFaces = { ...capturedFacesRef.current, [faceKey]: imageData };
+    capturedFacesRef.current = updatedFaces;
+    setCapturedFaces(updatedFaces);
+
+    // B face needs a 180-degree rotation to match the cube orientation
+    const finalColors = currentFace.key === "B"
+      ? [
+          fixedColors[8], fixedColors[7], fixedColors[6],
+          fixedColors[5], fixedColors[4], fixedColors[3],
+          fixedColors[2], fixedColors[1], fixedColors[0],
+        ]
+      : fixedColors;
+
+    const updatedColors = { ...faceColorsRef.current, [faceKey]: finalColors };
+    faceColorsRef.current = updatedColors;
+    setFaceColors(updatedColors);
 
     // Flash feedback
     setCaptured(true);
@@ -317,9 +351,9 @@ export default function CaptureScreen() {
     } else {
       // All 6 faces captured — save to sessionStorage and go to review
       stopCamera();
-      sessionStorage.setItem("cube_faces",  JSON.stringify({ ...capturedFaces, [faceKey]: imageData }));
-      sessionStorage.setItem("cube_colors", JSON.stringify({ ...faceColors,    [faceKey]: fixedColors }));
-      navigate("/review");
+      sessionStorage.setItem("cube_faces",  JSON.stringify(capturedFacesRef.current));
+      sessionStorage.setItem("cube_colors", JSON.stringify(faceColorsRef.current));
+      navigate("/review", { state: { faceColors: faceColorsRef.current } });
     }
   };
 
@@ -378,16 +412,23 @@ export default function CaptureScreen() {
               style={s.video}
             />
             {/* AR Grid Overlay */}
-            <div style={s.gridOverlay}>
+            <div style={{
+              ...s.gridOverlay,
+              position: "absolute",
+              top: "25%",
+              left: "25%",
+              width: "50%",
+              height: "50%",
+            }}>
               {Array(9).fill(0).map((_, i) => (
                 <div key={i} style={s.gridCell} />
               ))}
             </div>
             {/* Corner markers */}
-            <div style={{ ...s.corner, top: "19%", left: "19%" }} />
-            <div style={{ ...s.corner, top: "19%", right: "19%", transform: "rotate(90deg)" }} />
-            <div style={{ ...s.corner, bottom: "19%", left: "19%", transform: "rotate(-90deg)" }} />
-            <div style={{ ...s.corner, bottom: "19%", right: "19%", transform: "rotate(180deg)" }} />
+            <div style={{ ...s.corner, top: "24%", left: "24%" }} />
+            <div style={{ ...s.corner, top: "24%", right: "24%", transform: "rotate(90deg)" }} />
+            <div style={{ ...s.corner, bottom: "24%", left: "24%", transform: "rotate(-90deg)" }} />
+            <div style={{ ...s.corner, bottom: "24%", right: "24%", transform: "rotate(180deg)" }} />
             {/* Capture flash */}
             {captured && <div style={s.flashOverlay} />}
           </>

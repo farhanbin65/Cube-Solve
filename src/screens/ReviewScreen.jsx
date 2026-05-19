@@ -17,7 +17,7 @@ const HOLD_INSTRUCTIONS = {
   F: { facing: "Green",  top: "White"  },
   D: { facing: "Yellow", top: "Green"  },
   L: { facing: "Orange", top: "White"  },
-  B: { facing: "Blue",   top: "Yellow", note: "Read right to left" },
+  B: { facing: "Blue",   top: "White"  },
 };
 
 const COLOR_MAP = {
@@ -47,7 +47,7 @@ const NEIGHBOURS = {
   F: { top: "white",  bottom: "yellow", left: "orange", right: "red"    },
   D: { top: "green",  bottom: "blue",   left: "orange", right: "red"    },
   L: { top: "white",  bottom: "yellow", left: "blue",   right: "green"  },
-  B: { top: "yellow", bottom: "white",  left: "orange", right: "red"    },
+  B: { top: "white",  bottom: "yellow", left: "red",    right: "orange" },
 };
 // ── Validation ─────────────────────────────────────────────
 
@@ -206,17 +206,30 @@ const handleTileClick = (faceKey, cellIndex, e) => {
     setCentreWarn(false);
   };
 
-  const handleConfirm = () => {
-    const confirmedFaceColors = faceColors;
-    const cubeStr = faceColorsToString(confirmedFaceColors);
+  const handleConfirm = async () => {
+    if (!isValid) return;
+    const cubeStr = faceColorsToString(faceColors);
     if (!cubeStr) {
       alert("Invalid cube — check your colours");
       return;
     }
-    sessionStorage.setItem("cube_colors", JSON.stringify(confirmedFaceColors));
-    navigate("/solution", { state: { faceColors: confirmedFaceColors } });
-  };
 
+    // Validate with kociemba before navigating
+    const { getKociembaWasm } = await import("../utils/wasmLoader");
+    const k = await getKociembaWasm();
+    const testResult = await k.solve(cubeStr);
+
+    if (testResult === null || testResult === undefined) {
+      alert("Cube state is unsolvable — please correct the colours");
+      return;
+    }
+
+    // Empty string = already solved, that's fine
+    sessionStorage.setItem("cube_colors", JSON.stringify(faceColors));
+    sessionStorage.setItem("cube_string", cubeStr);
+    navigate("/solution", { state: { faceColors, cubeStr } });
+  };
+  
   const handleRescan = () => {
     sessionStorage.removeItem("cube_colors");
     sessionStorage.removeItem("cube_faces");
@@ -367,13 +380,22 @@ const handleTileClick = (faceKey, cellIndex, e) => {
             style={s.secondaryBtn}
             onClick={() => {
               const confirmedFaceColors = faceColors;
-              const cubeStr = faceColorsToString(confirmedFaceColors);
+              const cubeStr = location.state?.fromCube
+                ? location.state?.cubeStr
+                : faceColorsToString(confirmedFaceColors);
               if (!cubeStr) {
                 alert("Invalid cube — check your colours");
                 return;
               }
               sessionStorage.setItem("cube_colors", JSON.stringify(confirmedFaceColors));
-              navigate("/cube3d", { state: { faceColors: confirmedFaceColors } });
+              sessionStorage.setItem("cube_string", cubeStr);
+              navigate("/cube3d", { 
+                state: { 
+                  faceColors: confirmedFaceColors,
+                  autoSolve: true,
+                  cubeStr
+                } 
+              });
             }}
           >
             View 3D

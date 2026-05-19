@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Cube3D from "../components/Cube3D";
-import { createStateTracker, buildSolved } from "../utils/cubeState";
+import { createStateTracker, buildSolved, cubeStringToFaceColors, faceColorsToString } from "../utils/cubeState";
 import { solveCube } from "../utils/cubeSolver";
 
 const ALL_MOVES = ["U","U'","U2","D","D'","D2","R","R'","R2","L","L'","L2","F","F'","F2","B","B'","B2"];
@@ -50,13 +50,22 @@ const ts = {
 export default function Cube3Dscreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const incomingFaceColors = location.state?.faceColors;
+  const incomingCubeStr = location.state?.cubeStr;
+  const autoSolveRequested = location.state?.autoSolve;
   const cubeRef = useRef(null);
   const solveTimerRef = useRef(null);
   const trackerRef = useRef(null);
+  const loadedCubeStrRef = useRef(
+    location.state?.cubeStr || null
+  );
 
   const [ready, setReady]                     = useState(false);
   const [cubeKey, setCubeKey]                 = useState(0);
-  const [scrambledColors, setScrambledColors] = useState(() => location.state?.faceColors || buildSolved());
+  const [scrambledColors, setScrambledColors] = useState(() => {
+    if (incomingCubeStr) return cubeStringToFaceColors(incomingCubeStr);
+    return incomingFaceColors || buildSolved();
+  });
   const [moveHistory, setMoveHistory]         = useState([]);
   const [isAutoSolving, setIsAutoSolving]     = useState(false);
   const [solutionMoves, setSolutionMoves]     = useState([]);
@@ -92,15 +101,29 @@ export default function Cube3Dscreen() {
   useEffect(() => {
     createStateTracker().then(t => {
       trackerRef.current = t;
-      const incoming = location.state?.faceColors;
-      if (incoming) {
-        const loaded = t.loadFromFaceColors(incoming);
-        if (!loaded) showToast("Couldn't load scanned cube state", "error");
+
+      if (incomingCubeStr) {
+        const loaded = t.loadFromCubeString(incomingCubeStr);
+        if (loaded) {
+          setScrambledColors(t.getCurrentState());
+        } else {
+          showToast("Couldn't load saved cube state", "error");
+        }
+      } else if (incomingFaceColors && location.state?.autoSolve) {
+        const loaded = t.loadFromFaceColors(incomingFaceColors);
+        if (loaded) {
+          setScrambledColors(t.getCurrentState());
+        } else {
+          showToast("Couldn't load scanned cube state", "error");
+        }
       }
       setReady(true);
+    }).catch(e => {
+      console.error("💥 createStateTracker failed:", e);
+      setReady(true); // force past loading screen even on error
     });
     return () => { if (solveTimerRef.current) clearTimeout(solveTimerRef.current); };
-  }, []);
+  }, [autoSolveRequested, incomingCubeStr, incomingFaceColors, showToast]);
 
   // ── Apply single move ─────────────────────────────────────
   const applyMove = useCallback((move) => {
@@ -160,6 +183,8 @@ export default function Cube3Dscreen() {
   const handleReset = useCallback(() => {
     if (solveTimerRef.current) clearTimeout(solveTimerRef.current);
     if (!trackerRef.current) return;
+    loadedCubeStrRef.current = null;
+    sessionStorage.removeItem("cube_string");
     setIsAutoSolving(false);
     setSolutionMoves([]);
     setCurrentMove("");
@@ -171,7 +196,7 @@ export default function Cube3Dscreen() {
     showToast("Reset to solved", "info");
   }, [showToast]);  
   // ── Auto solve ────────────────────────────────────────────
-  const executeNextMove = useCallback((moves, index) => {
+  const executeNextMove = useCallback(function executeNextMoveImpl(moves, index) {
     if (index >= moves.length) {
       window.axisTimer?.stop();
       const elapsed = window.axisTimer?.getElapsed() || 0;
@@ -186,20 +211,26 @@ export default function Cube3Dscreen() {
     trackerRef.current?.applyMove(moves[index]);
     setCurrentSolveIdx(index);
     setCurrentMove(moves[index]);
-    solveTimerRef.current = setTimeout(() => executeNextMove(moves, index + 1), 420);
+    solveTimerRef.current = setTimeout(() => executeNextMoveImpl(moves, index + 1), 420);
   }, [showToast, saveToHistory]);
 
   const autoSolve = useCallback(async () => {
     if (!trackerRef.current || isAutoSolving) return;
-      setIsAutoSolving(true);
-      setCurrentMove("");
-      setSolutionMoves([]);
-      window.axisTimer?.reset();
-      window.axisTimer?.start();
+    setIsAutoSolving(true);
+    setCurrentMove("");
+    setSolutionMoves([]);
+    window.axisTimer?.reset();
+    window.axisTimer?.start();
 
     try {
-      const state = trackerRef.current.getCurrentState();
-      const moves = await solveCube(state);
+      // Use loaded cubeStr once (scan path), then clear it
+      const stateStr = loadedCubeStrRef.current
+        || trackerRef.current.getCurrentStateString();
+      loadedCubeStrRef.current = null; // clear after first use
+      sessionStorage.removeItem("cube_string"); // prevent stale reuse
+      console.log("STATE STRING BEING SOLVED:", stateStr);
+      window.__lastSolveStr = stateStr;
+      const moves = await solveCube(stateStr);
       if (moves === null) { setIsAutoSolving(false); showToast("Invalid cube state", "error"); return; }
       if (moves.length === 0) { setIsAutoSolving(false); showToast("Already solved!", "success"); return; }
       showToast(`Solution: ${moves.length} moves`, "info");
@@ -211,6 +242,16 @@ export default function Cube3Dscreen() {
       showToast("Solver error", "error");
     }
   }, [isAutoSolving, executeNextMove, showToast]);
+
+  // ── Auto-solve if navigated from Review screen ────────────
+  useEffect(() => {
+    if (!ready) return;
+    if (!autoSolveRequested) return;
+    // Small delay to let the 3D cube finish rendering
+    const t = setTimeout(() => autoSolve(), 300);
+    return () => clearTimeout(t);
+  }, [ready, autoSolveRequested, autoSolve]);
+
   // ── Loading ───────────────────────────────────────────────
   if (!ready) {
     return (
@@ -375,9 +416,36 @@ export default function Cube3Dscreen() {
       <div style={s.actions}>
         <button style={s.secondaryBtn} onClick={() => {
           const currentState = trackerRef.current?.getCurrentState();
-          navigate("/review", { state: { faceColors: currentState } });
+          const currentStr = trackerRef.current?.getCurrentStateString();
+          navigate("/review", {
+            state: {
+              faceColors: currentState,
+              cubeStr: currentStr,
+              fromCube: true,
+            },
+          });
         }}>
           ← Review
+        </button>
+        <button style={s.secondaryBtn} onClick={() => {
+          const state = trackerRef.current?.getCurrentState();
+          console.log("=== DEBUG STATE ===");
+          console.log("faceColors from tracker:", JSON.stringify(state, null, 2));
+          console.log("incoming faceColors:", JSON.stringify(location.state?.faceColors, null, 2));
+          
+          // Check if they match
+          const incoming = location.state?.faceColors;
+          if (incoming && state) {
+            const order = ["U","R","F","D","L","B"];
+            for (const face of order) {
+              const a = incoming[face]?.join(",");
+              const b = state[face]?.join(",");
+              if (a !== b) console.log(`❌ MISMATCH on ${face}:`, "\nincoming:", a, "\ntracker:", b);
+              else console.log(`✅ ${face} matches`);
+            }
+          }
+        }}>
+          🔍 Debug State
         </button>
         <button
           style={{ ...s.solveBtn, opacity: isAutoSolving ? 0.75 : 1, cursor: isAutoSolving ? "not-allowed" : "pointer" }}
