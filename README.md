@@ -22,6 +22,11 @@
 **Cube Solve** is a full-stack web application that leverages computer vision and advanced solving algorithms to help users solve Rubik's cubes. Scan all six faces of your cube with your device camera, and the application will generate an optimal solution using the Kociemba algorithm, displaying moves in a beautiful 3D visualization.
 
 ---
+### Application Workflow
+
+![App Flowchart](docs/flowchart.mmd)
+
+---
 
 ## Features
 
