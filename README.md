@@ -61,7 +61,8 @@ graph TD
     
     class START,END startEnd;
     class REVIEW important;
-    class HUB hub;```
+    class HUB hub;
+    ```
 
 ---
 
