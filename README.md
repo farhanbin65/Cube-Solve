@@ -23,7 +23,7 @@
 
 ---
 ### Application Workflow
-
+```mermaid
 graph TD
     START([START: Landing Page]) -->|Scan Cube| SCAN[SCAN MODE]
     START -->|Enter Manually| MANUAL[MANUAL MODE]
