@@ -5,12 +5,12 @@ import { solveCube } from "../utils/cubeSolver";
 
 // Plain English instructions for non-cubers
 const MOVE_PLAIN = {
-  "U":  { action: "Turn the TOP layer",      dir: "to the RIGHT  →",  times: 1 },
-  "U'": { action: "Turn the TOP layer",      dir: "to the LEFT  ←",   times: 1 },
-  "U2": { action: "Turn the TOP layer",      dir: "HALFWAY (×2)",      times: 2 },
-  "D":  { action: "Turn the BOTTOM layer",   dir: "to the LEFT  ←",   times: 1 },
-  "D'": { action: "Turn the BOTTOM layer",   dir: "to the RIGHT  →",  times: 1 },
-  "D2": { action: "Turn the BOTTOM layer",   dir: "HALFWAY (×2)",      times: 2 },
+  "U":  { action: "Turn the TOP layer",    dir: "to the LEFT  ←",   times: 1 },
+  "U'": { action: "Turn the TOP layer",    dir: "to the RIGHT  →",  times: 1 },
+  "U2": { action: "Turn the TOP layer",    dir: "HALFWAY (×2)",      times: 2 },
+  "D":  { action: "Turn the BOTTOM layer", dir: "to the RIGHT  →",  times: 1 },
+  "D'": { action: "Turn the BOTTOM layer", dir: "to the LEFT  ←",   times: 1 },
+  "D2": { action: "Turn the BOTTOM layer", dir: "HALFWAY (×2)",      times: 2 },
   "R":  { action: "Turn the RIGHT column",   dir: "UPWARD  ↑",         times: 1 },
   "R'": { action: "Turn the RIGHT column",   dir: "DOWNWARD  ↓",       times: 1 },
   "R2": { action: "Turn the RIGHT column",   dir: "HALFWAY (×2)",      times: 2 },

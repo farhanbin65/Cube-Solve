@@ -14,14 +14,13 @@ const FACE_COLORS = {
 // which row/col gets the arrow, and arrow direction
 const MOVE_VISUAL = {
   // U moves — white on top, show green front face, TOP ROW gets arrow
-  "U":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"right" },
-  "U'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"left"  },
-  "U2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row0", arrow:"right2"},
+  "U":  { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row0", arrow:"left"  },
+  "U'": { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row0", arrow:"right" },
+  "U2": { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row0", arrow:"left2" },
 
-  // D moves — yellow on bottom, show green front, BOTTOM ROW gets arrow
-  "D":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"left"  },
-  "D'": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"right" },
-  "D2": { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"row2", arrow:"left2" },
+  "D":  { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row2", arrow:"right" },
+  "D'": { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row2", arrow:"left"  },
+  "D2": { front:"green", top:"white", left:"orange", right:"red", bottom:"yellow", highlight:"row2", arrow:"right2"},
 
   // R moves — red on right, show green front, RIGHT COL gets arrow
   "R":  { front:"green", top:"white", left:"orange", right:"red",   bottom:"yellow", highlight:"col2", arrow:"up"   },
