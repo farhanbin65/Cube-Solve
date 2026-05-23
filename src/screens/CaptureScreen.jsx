@@ -199,40 +199,51 @@ export default function CaptureScreen() {
     { name: "blue",   rgb: [  0,  80, 200] },
   ];
 
-  function detectColor(r, g, b) {
-    const brightness = (r + g + b) / 3;
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    const saturation = max > 0 ? (max - min) / max : 0;
+    const l = (max + min) / 2;
+    if (max === min) return [0, 0, l];
+    const d = max - min;
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    let h;
+    if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else                h = ((r - g) / d + 4) / 6;
+    return [h * 360, s * 100, l * 100];
+  }
 
-    // White — low saturation, high brightness
-    if (saturation < 0.2 && brightness > 130) return "white";
+  function detectColor(r, g, b) {
+    const [h, s, l] = rgbToHsl(r, g, b);
 
-    // Yellow — high red, high green, low blue
-    if (r > 150 && g > 130 && b < 100 && r > b * 2 && g > b * 1.5) return "yellow";
+    console.log(`RGB(${r},${g},${b}) → HSL(${h.toFixed(1)}°, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`);
 
-    // Orange — high red, medium green, very low blue
-    if (r > 160 && g > 50 && g < 160 && b < 80 && r > g * 1.3) return "orange";
+    // White — low saturation OR very high lightness
+    if (s < 30 && l > 45) return "white";
 
-    // Red — high red, low green, low blue
-    if (r > 140 && g < 80 && b < 80 && r > g * 2 && r > b * 2) return "red";
+    // Yellow
+    if (h >= 38 && h <= 75 && s > 40) return "yellow";
 
-    // Green — high green dominant
-    if (g > r * 1.3 && g > b * 1.3 && g > 80) return "green";
+    // Orange
+    if (h >= 14 && h < 38 && s > 40) return "orange";
 
-    // Blue — high blue dominant
-    if (b > r * 1.3 && b > g * 1.1 && b > 60) return "blue";
+    // Red (wraps around 0)
+    if ((h >= 330 || h <= 14) && s > 40) return "red";
 
-    // Fallback — find closest by simple comparisons
-    if (r > g && r > b) {
-      if (g > b * 1.5) return "orange";
-      return "red";
-    }
-    if (g > r && g > b) return "green";
-    if (b > r && b > g) return "blue";
-    if (r > 150 && g > 150) return "yellow";
+    // Green
+    if (h >= 80 && h <= 170 && s > 25) return "green";
 
-    return "white";
+    // Blue
+    if (h >= 180 && h <= 270 && s > 25) return "blue";
+
+    // Fallback
+    if (l > 50) return "white";
+    if (h < 20 || h > 330) return "red";
+    if (h < 40) return "orange";
+    if (h < 80) return "yellow";
+    if (h < 170) return "green";
+    return "blue";
   };
 
   const extractColors = (canvas) => {
@@ -294,7 +305,11 @@ export default function CaptureScreen() {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0);
 
-    // Draw debug dots on canvas to show sampling points
+    // Extract colors before any debug drawing so sampling stays clean
+    const colors = extractColors(canvas);
+    const fixedColors = forceCorrectCentre(colors, currentFace.key);
+
+    // Draw debug dots after color extraction (optional)
     const w = canvas.width;
     const h = canvas.height;
     const gridLeft = w * 0.25;
@@ -308,21 +323,15 @@ export default function CaptureScreen() {
       for (let col = 0; col < 3; col++) {
         const cx = Math.round(gridLeft + (col + 0.5) * cellW);
         const cy = Math.round(gridTop + (row + 0.5) * cellH);
-        // Draw red dot at sampling point
-        ctx.fillStyle = "red";
+        // Draw lime dot at sampling point
+        ctx.fillStyle = "lime";
         ctx.beginPath();
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // Save debug image
-    const debugImg = canvas.toDataURL("image/jpeg", 0.9);
-    console.log("Debug image (copy to browser):", debugImg.substring(0, 100));
-
     const imageData = canvas.toDataURL("image/jpeg", 0.9);
-    const colors = extractColors(canvas);
-    const fixedColors = forceCorrectCentre(colors, currentFace.key);
     const faceKey = currentFace.key;
 
     const updatedFaces = { ...capturedFacesRef.current, [faceKey]: imageData };
