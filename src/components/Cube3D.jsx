@@ -12,7 +12,7 @@ const COLOR_HEX = {
   blue:    "#1e50b4",
   unknown: "#1e293b",
 };
-const BLACK = "#111118";
+const BLACK = "#0a0a0f";
 const ANIM_MS = 300;
 
 const FACE_TO_COLOR = {
@@ -280,7 +280,8 @@ const CubieScene = forwardRef(function CubieScene({ faceColors, onStateChange, o
 // ── CubieMesh ──────────────────────────────────────────────
 function CubieMesh({ cubie, meshRef, onFaceClick }) {
   const { pos, quat, colors } = cubie;
-  const size = 0.97;
+  const size = 0.93;
+  const radius = 0.08;
   const meshRef_local = useRef();
 
   useEffect(() => {
@@ -299,18 +300,25 @@ function CubieMesh({ cubie, meshRef, onFaceClick }) {
       position={[pos.x, pos.y, pos.z]}
       quaternion={[quat.x, quat.y, quat.z, quat.w]}
       castShadow
+      receiveShadow
       onClick={handleClick}
     >
       <boxGeometry args={[size, size, size]} />
-      {colors.map((col, i) => (
-        <meshStandardMaterial
+      {colors.map((col, i) => {
+        const isBlack = col === BLACK;
+        return (
+        <meshPhysicalMaterial
           key={i}
           attach={`material-${i}`}
           color={col}
-          roughness={0.55}
-          metalness={0.05}
+          roughness={isBlack ? 0.9 : 0.35}
+          metalness={isBlack ? 0.0 : 0.08}
+          clearcoat={isBlack ? 0 : 0.6}
+          clearcoatRoughness={0.25}
+          reflectivity={isBlack ? 0 : 0.5}
         />
-      ))}
+        );
+      })}
     </mesh>
   );
 }
@@ -329,12 +337,36 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange, onMove },
   return (
     <Canvas
       shadows
-      camera={{ position: [4, 4, 6], fov: 35 }}
-      style={{ background: "#0a0a0f", width: "100%", height: "100%" }}
+      camera={{ position: [4, 4, 6], fov: 32 }}
+      style={{ background: "#080810", width: "100%", height: "100%" }}
+      gl={{
+        antialias: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.1,
+        outputColorSpace: THREE.SRGBColorSpace,
+      }}
     >
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[5, 8, 5]} intensity={0.9} castShadow />
-      <directionalLight position={[-5, 3, -5]} intensity={0.3} />
+      <ambientLight intensity={0.4} />
+
+      <directionalLight
+        position={[6, 10, 6]}
+        intensity={1.4}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+
+      <directionalLight
+        position={[-6, 4, -4]}
+        intensity={0.35}
+        color="#a0c4ff"
+      />
+
+      <directionalLight
+        position={[0, -6, -6]}
+        intensity={0.2}
+        color="#ffffff"
+      />
 
       <CubieScene
         ref={sceneRef}
@@ -350,6 +382,8 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, onStateChange, onMove },
         maxDistance={12}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI * 5 / 6}
+        enableDamping
+        dampingFactor={0.08}
       />
     </Canvas>
   );
