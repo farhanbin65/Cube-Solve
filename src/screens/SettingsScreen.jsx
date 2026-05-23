@@ -180,6 +180,7 @@ export default function SettingsScreen() {
           {[
             ["App", "Cube Solve"],
             ["Version", "1.0.0"],
+            ["Contact", "https://www.farhanbin.dev"],
             ["Author", "Farhan Bin Hossain"],
             ["Algorithm", "Kociemba (Two-phase)"],
           ].map(([k, v], i, arr) => (
@@ -187,17 +188,16 @@ export default function SettingsScreen() {
               <div style={s.infoRow}>
                 <span style={{ color: t.textSub, fontSize: 13 }}>{k}</span>
                 <span style={{ color: t.textSub, fontSize: 13, fontWeight: 500 }}>
-                  {v}
-                  {k === "Author" && (
+                  {k === "Contact" ? (
                     <a
-                      href="https://www.farhanbin.dev"
+                      href={v}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ display: "block", color: t.accent, fontSize: 12, textDecoration: "none", marginTop: 6 }}
                     >
                       Portfolio
                     </a>
-                  )}
+                  ) : v}
                 </span>
               </div>
               {i < arr.length - 1 && <div style={s.thinDivider} />}
