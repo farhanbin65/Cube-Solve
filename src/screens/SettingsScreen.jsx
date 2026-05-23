@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../ThemeContext";
+import Logo from "../components/Logo";
 import { THEMES, setTheme } from "../theme";
 
 export default function SettingsScreen() {
@@ -38,7 +39,10 @@ export default function SettingsScreen() {
   return (
     <div style={s.root}>
       <div style={s.header}>
-        <span style={s.stepTag}>Settings</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={24} />
+          <span style={s.stepTag}>Settings</span>
+        </div>
       </div>
 
       <h2 style={s.title}>Preferences</h2>

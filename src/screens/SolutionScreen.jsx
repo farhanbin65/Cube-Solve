@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MoveDiagram from "../components/MoveDiagram";
+import Logo from "../components/Logo";
 import { solveCube } from "../utils/cubeSolver";
 
 // Plain English instructions for non-cubers
@@ -133,7 +134,10 @@ export default function SolutionScreen() {
 
       {/* ── Top bar ── */}
       <div style={s.topBar}>
-        <button style={s.backBtn} onClick={() => navigate("/review")}>← Review</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={24} />
+          <button style={s.backBtn} onClick={() => navigate("/review")}>← Review</button>
+        </div>
         <span style={s.stepCounter}>{currentMoveIndex + 1} / {solution.length}</span>
         <button style={s.watchBtn} onClick={handleWatch3D}>3D ▶</button>
       </div>

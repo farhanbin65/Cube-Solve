@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 
 const FACES = [
   { key: "U", label: "White", position: "Up" },
@@ -376,7 +377,10 @@ export default function CaptureScreen() {
     <div style={s.root}>
       {/* Step Header */}
       <div style={s.header}>
-        <span style={s.stepTag}>Step 01 · Scanning</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={24} />
+          <span style={s.stepTag}>Step 01 · Scanning</span>
+        </div>
         <div style={s.progressPill}>
           {faceIndex + 1} <span style={s.progressOf}>of 6</span>
         </div>

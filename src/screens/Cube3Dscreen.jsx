@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Cube3D from "../components/Cube3D";
+import Logo from "../components/Logo";
 import { createStateTracker, buildSolved, cubeStringToFaceColors, faceColorsToString } from "../utils/cubeState";
 import { solveCube } from "../utils/cubeSolver";
 
@@ -291,7 +292,10 @@ export default function Cube3Dscreen() {
       <div style={s.header}>
         <div style={s.headerTop}>
           <div style={s.headerLeft}>
-            <span style={s.title}>3D Cube</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Logo size={24} />
+              <span style={s.title}>3D Cube</span>
+            </div>
             {moveHistory.length > 0 && (
               <span style={s.movePill}>{moveHistory.length} moves</span>
             )}

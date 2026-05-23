@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
@@ -65,7 +66,10 @@ export default function HistoryScreen() {
     return (
       <div style={s.root}>
         <div style={s.header}>
-          <span style={s.stepTag}>History</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Logo size={24} />
+            <span style={s.stepTag}>History</span>
+          </div>
         </div>
         <div style={s.emptyState}>
           <div style={s.emptyIcon}>
@@ -89,7 +93,10 @@ export default function HistoryScreen() {
     <div style={s.root}>
       {/* Header */}
       <div style={s.header}>
-        <span style={s.stepTag}>History</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={24} />
+          <span style={s.stepTag}>History</span>
+        </div>
         <button style={s.clearBtn} onClick={clearHistory}>
           Clear all
         </button>

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import Logo from "./components/Logo";
 
 const NAV_ITEMS = [
   { label: "Solve",    path: "/",         icon: CubeIcon },
   { label: "Review",  path: "/review",   icon: GridIcon },
+  { label: "Home",    path: "/",         icon: (props) => <Logo {...props} /> },
   { label: "History", path: "/history",  icon: ClockIcon },
   { label: "Settings",path: "/settings", icon: GearIcon },
 ];
@@ -76,13 +78,16 @@ export default function AppShell({ children }) {
         zIndex: 10,
         flexShrink: 0,
       }}>
-        <div style={{ display:"flex", alignItems:"baseline", gap: 6 }}>
-          <span style={{ color: t.textPrimary, fontSize: 15, fontWeight: 700, letterSpacing: "0.02em" }}>
-            Cube Solve
-          </span>
-          <span style={{ color: t.textMuted, fontSize: 10, fontWeight: 500, letterSpacing: "0.05em" }}>
-            v1.0
-          </span>
+        <div style={{ display:"flex", alignItems:"center", gap: 8 }}>
+          <Logo size={28} />
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+            <span style={{ color: t.textPrimary, fontSize: 15, fontWeight: 700, letterSpacing: "0.02em" }}>
+              Cube Solve
+            </span>
+            <span style={{ color: t.textMuted, fontSize: 10, fontWeight: 500, letterSpacing: "0.05em" }}>
+              v1.0
+            </span>
+          </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: 8 }}>
           {showTimer && (

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 
 const STEPS = [
   { num: "01", label: "Scan all six cube faces" },
@@ -13,7 +14,10 @@ export default function IntroScreen() {
   return (
     <div style={s.root}>
       <div style={s.header}>
-        <span style={s.tag}>Precision Lab · Farhan Bin Hossain</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={28} />
+          <span style={s.tag}>Precision Lab · Farhan Bin Hossain</span>
+        </div>
       </div>
 
       <div style={s.hero}>

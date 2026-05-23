@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Logo from "../components/Logo";
 import { faceColorsToString } from "../utils/cubeState";
 
 const FACES = [
@@ -250,7 +251,10 @@ const handleTileClick = (faceKey, cellIndex, e) => {
 
       {/* Header */}
       <div style={s.header}>
-        <span style={s.stepTag}>Step 02 · Verification</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Logo size={24} />
+          <span style={s.stepTag}>Step 02 · Verification</span>
+        </div>
       </div>
 
       <h2 style={s.title}>Verify mapping</h2>
