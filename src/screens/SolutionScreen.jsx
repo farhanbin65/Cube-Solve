@@ -203,14 +203,14 @@ export default function SolutionScreen() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-
 const s = {
   root: {
     display: "flex",
     flexDirection: "column",
-    minHeight: "100%",
-    padding: "12px 20px 0",
-    gap: 14,
+    height: "100%",             // was minHeight
+    padding: "10px 16px 12px",  // tighter
+    gap: 8,                     // was 14
+    overflow: "hidden",         // no scroll
   },
   centred: {
     display: "flex",
@@ -225,6 +225,7 @@ const s = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    flexShrink: 0,
   },
   backBtn: {
     background: "none",
@@ -251,10 +252,11 @@ const s = {
     cursor: "pointer",
   },
   progressTrack: {
-    height: 4,
+    height: 3,                  // was 4
     background: "rgba(255,255,255,0.06)",
     borderRadius: 4,
     overflow: "hidden",
+    flexShrink: 0,
   },
   progressFill: {
     height: "100%",
@@ -264,29 +266,31 @@ const s = {
   },
   moveLabel: {
     color: "#475569",
-    fontSize: 11,
+    fontSize: 10,               // was 11
     fontWeight: 600,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     margin: 0,
+    flexShrink: 0,
   },
   card: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 16,
+    gap: 10,                    // was 16
     background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 24,
-    padding: "24px 20px",
+    borderRadius: 20,           // was 24
+    padding: "14px 16px",       // was 24px 20px
+    flexShrink: 0,
   },
   notationBadge: {
     background: "rgba(255,255,255,0.07)",
     border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 12,
-    padding: "6px 20px",
+    borderRadius: 10,
+    padding: "4px 18px",        // was 6px 20px
     color: "#e2e8f0",
-    fontSize: 28,
+    fontSize: 24,               // was 28
     fontWeight: 900,
     letterSpacing: "0.04em",
   },
@@ -294,29 +298,29 @@ const s = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 4,
+    gap: 2,                     // was 4
     textAlign: "center",
   },
   actionText: {
     color: "#94a3b8",
-    fontSize: 15,
+    fontSize: 13,               // was 15
     fontWeight: 600,
   },
   dirText: {
     color: "#e2e8f0",
-    fontSize: 20,
+    fontSize: 17,               // was 20
     fontWeight: 800,
     letterSpacing: "-0.01em",
   },
   timesNote: {
-    marginTop: 4,
+    marginTop: 2,
     color: "#fbbf24",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     background: "rgba(251,191,36,0.1)",
     border: "1px solid rgba(251,191,36,0.2)",
     borderRadius: 8,
-    padding: "3px 10px",
+    padding: "2px 10px",
   },
   orientHint: {
     display: "flex",
@@ -325,86 +329,89 @@ const s = {
     background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.06)",
     borderRadius: 10,
-    padding: "7px 14px",
+    padding: "6px 12px",
     alignSelf: "stretch",
   },
   orientDot: {
-    width: 10,
-    height: 10,
+    width: 8,
+    height: 8,
     borderRadius: "50%",
     flexShrink: 0,
   },
   orientText: {
     color: "#64748b",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 500,
   },
   diagramWrap: {
-    padding: "8px 0",
+    padding: "2px 0",           // was 8px
   },
   holdBox: {
     display: "flex",
     flexDirection: "column",
-    gap: 5,
+    gap: 3,                     // was 5
     background: "rgba(255,255,255,0.02)",
     border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 12,
-    padding: "10px 14px",
+    borderRadius: 10,
+    padding: "8px 12px",        // was 10px 14px
     alignSelf: "stretch",
   },
   holdLabel: {
     color: "#334155",
-    fontSize: 10,
+    fontSize: 9,                // was 10
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
   holdText: {
     color: "#64748b",
-    fontSize: 13,
+    fontSize: 12,               // was 13
     fontWeight: 500,
     lineHeight: 1.4,
   },
   upcomingWrap: {
     display: "flex",
     flexDirection: "column",
-    gap: 8,
+    gap: 6,                     // was 8
+    flexShrink: 0,
   },
   upcomingLabel: {
     color: "#1e293b",
-    fontSize: 10,
+    fontSize: 9,                // was 10
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
   strip: {
     display: "flex",
-    gap: 6,
+    gap: 5,
     alignItems: "center",
   },
   stripBadge: {
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 8,
-    padding: "5px 12px",
+    borderRadius: 7,
+    padding: "4px 10px",        // was 5px 12px
     color: "#475569",
-    fontSize: 13,
+    fontSize: 12,               // was 13
     fontWeight: 700,
   },
   doneTag: {
     color: "#4ade80",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
   },
   navRow: {
     display: "flex",
-    gap: 12,
+    gap: 10,                    // was 12
+    flexShrink: 0,
+    marginTop: "auto",          // pushes to bottom
   },
   navBtn: {
-    padding: "15px",
-    borderRadius: 16,
+    padding: "13px",            // was 15px
+    borderRadius: 14,
     border: "none",
-    fontSize: 15,
+    fontSize: 14,               // was 15
     fontWeight: 700,
     cursor: "pointer",
     transition: "opacity 0.2s",
