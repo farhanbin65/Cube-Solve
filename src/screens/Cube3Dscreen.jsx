@@ -15,6 +15,15 @@ const MOVE_GROUPS = [
   { label:"B", moves:["B","B'","B2"] },
 ];
 
+const INVERSE_MOVE = {
+  "U":"U'", "U'":"U", "U2":"U2",
+  "D":"D'", "D'":"D", "D2":"D2",
+  "R":"R'", "R'":"R", "R2":"R2",
+  "L":"L'", "L'":"L", "L2":"L2",
+  "F":"F'", "F'":"F", "F2":"F2",
+  "B":"B'", "B'":"B", "B2":"B2",
+};
+
 const FACE_COLOR = {
   U:"#f0f0eb", D:"#ffd700", R:"#d22828",
   L:"#ff6420", F:"#1e7a3c", B:"#1e50b4",
@@ -139,6 +148,16 @@ export default function Cube3Dscreen() {
     trackerRef.current.applyMove(move);
     setMoveHistory(h => [...h, move]);
   }, []);
+
+  const handleUndo = useCallback(() => {
+    if (moveHistory.length === 0 || isAutoSolving) return;
+    const lastMove = moveHistory[moveHistory.length - 1];
+    const inverse = INVERSE_MOVE[lastMove];
+    if (!inverse) return;
+    cubeRef.current?.applyMove(inverse);
+    trackerRef.current?.applyMove(inverse);
+    setMoveHistory(h => h.slice(0, -1));
+  }, [moveHistory, isAutoSolving]);
 
   // ── Scramble ──────────────────────────────────────────────
   const handleScramble = useCallback((count = 20) => {
@@ -315,6 +334,17 @@ export default function Cube3Dscreen() {
                 </div>
               )}
             </div>
+            <button
+              style={{
+                ...s.iconBtn,
+                opacity: moveHistory.length === 0 || isAutoSolving ? 0.35 : 1,
+              }}
+              onClick={handleUndo}
+              disabled={moveHistory.length === 0 || isAutoSolving}
+              title="Undo last move"
+            >
+              ↩ <span style={{ fontSize:10, marginLeft:2 }}>Undo</span>
+            </button>
             <button style={s.iconBtn} onClick={handleReset} title="Reset">
               ↺ <span style={{ fontSize:10, marginLeft:2 }}>Reset</span>
             </button>
