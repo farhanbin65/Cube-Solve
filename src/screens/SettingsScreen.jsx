@@ -133,11 +133,19 @@ export default function SettingsScreen() {
             <div style={s.avatar}>
               {username.trim() ? username.trim()[0].toUpperCase() : "S"}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ color: t.textPrimary, fontSize: 15, fontWeight: 700 }}>
                 {username.trim() || "Solver"}
               </span>
               <span style={{ color: t.textMuted, fontSize: 12 }}>Cube Solve user</span>
+              <a
+                href="https://www.farhanbin.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: t.accent, fontSize: 12, textDecoration: "none" }}
+              >
+                https://www.farhanbin.dev
+              </a>
             </div>
           </div>
 
