@@ -138,14 +138,6 @@ export default function SettingsScreen() {
                 {username.trim() || "Solver"}
               </span>
               <span style={{ color: t.textMuted, fontSize: 12 }}>Cube Solve user</span>
-              <a
-                href="https://www.farhanbin.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: t.accent, fontSize: 12, textDecoration: "none" }}
-              >
-                Portfolio
-              </a>
             </div>
           </div>
 
@@ -194,7 +186,19 @@ export default function SettingsScreen() {
             <div key={k}>
               <div style={s.infoRow}>
                 <span style={{ color: t.textSub, fontSize: 13 }}>{k}</span>
-                <span style={{ color: t.textSub, fontSize: 13, fontWeight: 500 }}>{v}</span>
+                <span style={{ color: t.textSub, fontSize: 13, fontWeight: 500 }}>
+                  {v}
+                  {k === "Author" && (
+                    <a
+                      href="https://www.farhanbin.dev"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "block", color: t.accent, fontSize: 12, textDecoration: "none", marginTop: 6 }}
+                    >
+                      Portfolio
+                    </a>
+                  )}
+                </span>
               </div>
               {i < arr.length - 1 && <div style={s.thinDivider} />}
             </div>
