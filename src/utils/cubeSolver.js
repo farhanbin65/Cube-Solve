@@ -40,7 +40,7 @@ export async function solveCube(faceColorsOrString) {
     const result = await kociemba.solve(cubeStr);
     console.log("🧩 Raw result:", result);
     if (result === null || result === undefined) return null;
-    if (result.trim() === "") return []; // empty string = already solved
+    if (result.trim() === "") return null;
     return result.trim().split(/\s+/).filter(Boolean);
   } catch (e) {
     console.error("💥 Solver error:", e);
