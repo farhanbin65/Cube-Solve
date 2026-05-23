@@ -144,7 +144,7 @@ export default function SettingsScreen() {
                 rel="noopener noreferrer"
                 style={{ color: t.accent, fontSize: 12, textDecoration: "none" }}
               >
-                https://www.farhanbin.dev
+                Portfolio
               </a>
             </div>
           </div>
