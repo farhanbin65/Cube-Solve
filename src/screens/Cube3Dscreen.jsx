@@ -52,12 +52,13 @@ export default function Cube3Dscreen() {
   const location = useLocation();
   const incomingFaceColors = location.state?.faceColors;
   const incomingCubeStr = location.state?.cubeStr;
-  const autoSolveRequested = location.state?.autoSolve;
   const cubeRef = useRef(null);
   const solveTimerRef = useRef(null);
   const trackerRef = useRef(null);
   const loadedCubeStrRef = useRef(
-    location.state?.cubeStr || null
+    location.state?.cubeStr ||
+    sessionStorage.getItem("cube_string") ||
+    null
   );
 
   const [ready, setReady]                     = useState(false);
@@ -99,6 +100,11 @@ export default function Cube3Dscreen() {
 
   // ── Init tracker ──────────────────────────────────────────
   useEffect(() => {
+    loadedCubeStrRef.current =
+      incomingCubeStr ||
+      sessionStorage.getItem("cube_string") ||
+      loadedCubeStrRef.current;
+
     createStateTracker().then(t => {
       trackerRef.current = t;
 
@@ -123,7 +129,7 @@ export default function Cube3Dscreen() {
       setReady(true); // force past loading screen even on error
     });
     return () => { if (solveTimerRef.current) clearTimeout(solveTimerRef.current); };
-  }, [autoSolveRequested, incomingCubeStr, incomingFaceColors, showToast]);
+  }, [incomingCubeStr, incomingFaceColors, showToast]);
 
   // ── Apply single move ─────────────────────────────────────
   const applyMove = useCallback((move) => {
@@ -242,15 +248,6 @@ export default function Cube3Dscreen() {
       showToast("Solver error", "error");
     }
   }, [isAutoSolving, executeNextMove, showToast]);
-
-  // ── Auto-solve if navigated from Review screen ────────────
-  useEffect(() => {
-    if (!ready) return;
-    if (!autoSolveRequested) return;
-    // Small delay to let the 3D cube finish rendering
-    const t = setTimeout(() => autoSolve(), 300);
-    return () => clearTimeout(t);
-  }, [ready, autoSolveRequested, autoSolve]);
 
   // ── Loading ───────────────────────────────────────────────
   if (!ready) {
@@ -426,26 +423,6 @@ export default function Cube3Dscreen() {
           });
         }}>
           ← Review
-        </button>
-        <button style={s.secondaryBtn} onClick={() => {
-          const state = trackerRef.current?.getCurrentState();
-          console.log("=== DEBUG STATE ===");
-          console.log("faceColors from tracker:", JSON.stringify(state, null, 2));
-          console.log("incoming faceColors:", JSON.stringify(location.state?.faceColors, null, 2));
-          
-          // Check if they match
-          const incoming = location.state?.faceColors;
-          if (incoming && state) {
-            const order = ["U","R","F","D","L","B"];
-            for (const face of order) {
-              const a = incoming[face]?.join(",");
-              const b = state[face]?.join(",");
-              if (a !== b) console.log(`❌ MISMATCH on ${face}:`, "\nincoming:", a, "\ntracker:", b);
-              else console.log(`✅ ${face} matches`);
-            }
-          }
-        }}>
-          🔍 Debug State
         </button>
         <button
           style={{ ...s.solveBtn, opacity: isAutoSolving ? 0.75 : 1, cursor: isAutoSolving ? "not-allowed" : "pointer" }}

@@ -166,7 +166,8 @@ function fillSolvedCube() {
 const handleTileClick = (faceKey, cellIndex, e) => {
   e.stopPropagation();
   setCentreWarn(false);
-  // Centres are locked — forced from known cube layout
+
+  // NO transformation here — store ci as-is
   if (cellIndex === CENTRE_INDEX) {
     setCentreWarn(true);
     setSelectedFace(null);
@@ -178,15 +179,20 @@ const handleTileClick = (faceKey, cellIndex, e) => {
     setSelectedCell(null);
   } else {
     setSelectedFace(faceKey);
-    setSelectedCell(cellIndex);
+    setSelectedCell(cellIndex); // store visual ci directly
   }
 };
 
   const handleColorPick = (colorName) => {
     if (selectedFace === null || selectedCell === null) return;
 
+    // ONE transformation here — convert visual ci to data index
+    const actualIndex = ["B", "D"].includes(selectedFace)
+      ? [6,7,8,3,4,5,0,1,2][selectedCell]
+      : selectedCell;
+
     // If changing a centre, block duplicate centre colours
-    if (selectedCell === CENTRE_INDEX) {
+    if (actualIndex === CENTRE_INDEX) {
       const duplicate = FACES.some(
         f => f.key !== selectedFace &&
         faceColors[f.key]?.[CENTRE_INDEX] === colorName
@@ -199,7 +205,7 @@ const handleTileClick = (faceKey, cellIndex, e) => {
 
     const newColors = { ...faceColors };
     newColors[selectedFace] = [...newColors[selectedFace]];
-    newColors[selectedFace][selectedCell] = colorName;
+  newColors[selectedFace][actualIndex] = colorName;
     setFaceColors(newColors);
     setSelectedFace(null);
     setSelectedCell(null);
@@ -253,7 +259,6 @@ const handleTileClick = (faceKey, cellIndex, e) => {
         <span style={s.lockNote}> Centre tiles can be edited if wrongly detected.</span>
       </p>
 
-      {/* Live errors */}
       {errors.length > 0 && (
         <div style={s.errorBox}>
           <span style={s.errorIcon}>⚠</span>
@@ -380,9 +385,7 @@ const handleTileClick = (faceKey, cellIndex, e) => {
             style={s.secondaryBtn}
             onClick={() => {
               const confirmedFaceColors = faceColors;
-              const cubeStr = location.state?.fromCube
-                ? location.state?.cubeStr
-                : faceColorsToString(confirmedFaceColors);
+              const cubeStr = faceColorsToString(confirmedFaceColors);
               if (!cubeStr) {
                 alert("Invalid cube — check your colours");
                 return;
@@ -392,7 +395,6 @@ const handleTileClick = (faceKey, cellIndex, e) => {
               navigate("/cube3d", { 
                 state: { 
                   faceColors: confirmedFaceColors,
-                  autoSolve: true,
                   cubeStr
                 } 
               });
@@ -420,6 +422,10 @@ const handleTileClick = (faceKey, cellIndex, e) => {
 // ── Face Card ──────────────────────────────────────────────
 
 function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
+  const displayTiles = ["B", "D"].includes(face.key)
+    ? [tiles[6],tiles[7],tiles[8],tiles[3],tiles[4],tiles[5],tiles[0],tiles[1],tiles[2]]
+    : tiles;
+
   return (
     <div style={s.faceCardOuter}>
 
@@ -456,7 +462,7 @@ function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
             </span>
           )}
           <div style={s.tileGrid}>
-            {tiles.map((colorName, ci) => {
+            {displayTiles.map((colorName, ci) => {
               const isCentre   = ci === CENTRE_INDEX;
               const isSelected = selectedCell === ci;
               return (
