@@ -291,20 +291,58 @@ const handleTileClick = (faceKey, cellIndex, e) => {
       {/* Validation status */}
       <div style={s.statusRow}>
         {isValid ? (
-          <div style={s.statusGood}>
-            <span style={{ ...s.statusDot, background: "#4ade80" }} />
-            Valid cube — ready to solve
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(74,222,128,0.1)",
+            border: "1px solid rgba(74,222,128,0.25)",
+            borderRadius: 10,
+            padding: "8px 14px",
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#4ade80",
+              boxShadow: "0 0 6px #4ade80",
+              flexShrink: 0,
+            }} />
+            <span style={{
+              color: "#4ade80",
+              fontSize: 13,
+              fontWeight: 600,
+            }}>
+              Valid cube — ready to solve
+            </span>
           </div>
         ) : (
-          <div style={s.statusBad}>
-            <span style={{ ...s.statusDot, background: "#f87171" }} />
-            {errors.length} issue{errors.length > 1 ? "s" : ""} — keep correcting
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(248,113,113,0.1)",
+            border: "1px solid rgba(248,113,113,0.25)",
+            borderRadius: 10,
+            padding: "8px 14px",
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#f87171",
+              boxShadow: "0 0 6px #f87171",
+              flexShrink: 0,
+            }} />
+            <span style={{
+              color: "#f87171",
+              fontSize: 13,
+              fontWeight: 600,
+            }}>
+              {errors.length} issue{errors.length > 1 ? "s" : ""} — keep correcting
+            </span>
           </div>
         )}
       </div>
 
       {/* Spacer for sticky bottom */}
-      <div style={{ height: 160 }} />
+      <div style={{ height: 180 }} />
 
       {/* ── Sticky bottom ── */}
       <div style={s.stickyBottom} ref={pickerRef}>

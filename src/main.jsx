@@ -1,13 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./styles/index.css";
+import { ThemeProvider } from "./ThemeContext";
 import App from "./App";
-import { getKociembaWasm } from "./utils/wasmLoader";
-
-getKociembaWasm().catch(() => {});
+import "./index.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </StrictMode>
 );

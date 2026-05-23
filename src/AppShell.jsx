@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "./ThemeContext";
 
 const NAV_ITEMS = [
   { label: "Solve",    path: "/",         icon: CubeIcon },
@@ -9,9 +10,12 @@ const NAV_ITEMS = [
 ];
 
 export default function AppShell({ children }) {
+  const t = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [username, setUsername] = useState(() => localStorage.getItem("axis_username") || "Solver");
+  const [username, setUsername] = useState(
+    () => localStorage.getItem("axis_username") || "Solver"
+  );
   const [elapsed, setElapsed] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const intervalRef = useRef(null);
@@ -50,44 +54,118 @@ export default function AppShell({ children }) {
   const showTimer = timerActive || elapsed > 0;
 
   return (
-    <div style={s.root}>
-      <header style={s.topBar}>
-        <div style={s.topLeft}>
-          <span style={s.appName}>Cube Solve</span>
-          <span style={s.version}>v1.0</span>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100dvh",
+      width: "100%",
+      maxWidth: 390,
+      margin: "0 auto",
+      background: t.bg,
+      fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      <header style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "10px 16px",
+        borderBottom: `1px solid ${t.border}`,
+        background: t.headerBg,
+        zIndex: 10,
+        flexShrink: 0,
+      }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap: 6 }}>
+          <span style={{ color: t.textPrimary, fontSize: 15, fontWeight: 700, letterSpacing: "0.02em" }}>
+            Cube Solve
+          </span>
+          <span style={{ color: t.textMuted, fontSize: 10, fontWeight: 500, letterSpacing: "0.05em" }}>
+            v1.0
+          </span>
         </div>
-        <div style={s.topRight}>
+        <div style={{ display:"flex", alignItems:"center", gap: 8 }}>
           {showTimer && (
-            <div style={s.timerPill}>
-              <span style={s.timerDot} />
+            <div style={{
+              display: "flex", alignItems: "center", gap: 5,
+              background: t.surface,
+              border: `1px solid ${t.border}`,
+              borderRadius: 20, padding: "3px 8px",
+              color: t.textSub, fontSize: 12, fontWeight: 600,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: "50%",
+                background: t.accent,
+                boxShadow: `0 0 6px ${t.accent}`,
+                animation: "pulse 1.5s ease-in-out infinite",
+              }} />
               {formatTime(elapsed)}
             </div>
           )}
-          <div style={s.userPill}>
-            <div style={s.userAvatar}>{username[0].toUpperCase()}</div>
-            <span style={s.userName}>{username}</span>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 20, padding: "3px 8px 3px 3px",
+          }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: "50%",
+              background: t.surfaceHigh,
+              color: t.textPrimary, fontSize: 10, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {username[0].toUpperCase()}
+            </div>
+            <span style={{ color: t.textSub, fontSize: 12, fontWeight: 500 }}>
+              {username}
+            </span>
           </div>
         </div>
       </header>
 
-      <main style={s.main}>
+      <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
         {children}
       </main>
 
-      <nav style={s.bottomNav}>
+      <nav style={{
+        display: "flex",
+        justifyContent: "space-around",
+        alignItems: "center",
+        padding: "6px 0 18px",
+        borderTop: `1px solid ${t.border}`,
+        background: t.navBg,
+        flexShrink: 0,
+        zIndex: 10,
+      }}>
         {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
           const active = location.pathname === path;
           return (
             <button
               key={path}
-              style={{ ...s.navBtn, ...(active ? s.navBtnActive : {}) }}
               onClick={() => navigate(path)}
+              style={{
+                display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 3,
+                background: "none", border: "none", cursor: "pointer",
+                padding: "6px 16px", position: "relative",
+                minWidth: 56,
+              }}
             >
-              <Icon size={20} color={active ? "#e2e8f0" : "#475569"} />
-              <span style={{ ...s.navLabel, color: active ? "#e2e8f0" : "#475569" }}>
+              <Icon size={20} color={active ? t.textPrimary : t.textSub} />
+              <span style={{
+                fontSize: 10, fontWeight: 500, letterSpacing: "0.03em",
+                color: active ? t.textPrimary : t.textSub,
+              }}>
                 {label}
               </span>
-              {active && <div style={s.navActiveDot} />}
+              {active && (
+                <div style={{
+                  position: "absolute", bottom: -2,
+                  width: 4, height: 4, borderRadius: "50%",
+                  background: t.accent,
+                }} />
+              )}
             </button>
           );
         })}
@@ -132,139 +210,3 @@ function GearIcon({ size = 20, color = "currentColor" }) {
     </svg>
   );
 }
-
-const s = {
-  root: {
-    display: "flex",
-    flexDirection: "column",
-    height: "100dvh",
-    width: "100%",
-    maxWidth: 480,
-    margin: "0 auto",
-    background: "#0a0a0f",
-    fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
-    position: "relative",
-    overflow: "hidden",
-  },
-  topBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 20px",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    background: "#0a0a0f",
-    zIndex: 10,
-    flexShrink: 0,
-  },
-  topLeft: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 8,
-  },
-  appName: {
-    color: "#e2e8f0",
-    fontSize: 16,
-    fontWeight: 700,
-    letterSpacing: "0.02em",
-  },
-  version: {
-    color: "#334155",
-    fontSize: 11,
-    fontWeight: 500,
-    letterSpacing: "0.05em",
-  },
-  topRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  },
-  timerPill: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 20,
-    padding: "4px 10px",
-    color: "#94a3b8",
-    fontSize: 13,
-    fontWeight: 600,
-    fontVariantNumeric: "tabular-nums",
-    letterSpacing: "0.05em",
-  },
-  timerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: "50%",
-    background: "#4ade80",
-    boxShadow: "0 0 6px #4ade80",
-    animation: "pulse 1.5s ease-in-out infinite",
-  },
-  userPill: {
-    display: "flex",
-    alignItems: "center",
-    gap: 7,
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 20,
-    padding: "4px 10px 4px 4px",
-  },
-  userAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: "50%",
-    background: "rgba(255,255,255,0.1)",
-    color: "#e2e8f0",
-    fontSize: 11,
-    fontWeight: 700,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  userName: {
-    color: "#94a3b8",
-    fontSize: 13,
-    fontWeight: 500,
-  },
-  main: {
-    flex: 1,
-    overflowY: "auto",
-    overflowX: "hidden",
-  },
-  bottomNav: {
-    display: "flex",
-    justifyContent: "space-around",
-    alignItems: "center",
-    padding: "8px 0 20px",
-    borderTop: "1px solid rgba(255,255,255,0.05)",
-    background: "#0a0a0f",
-    flexShrink: 0,
-    zIndex: 10,
-  },
-  navBtn: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 4,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "6px 20px",
-    position: "relative",
-    minWidth: 60,
-  },
-  navBtnActive: {},
-  navLabel: {
-    fontSize: 11,
-    fontWeight: 500,
-    letterSpacing: "0.03em",
-  },
-  navActiveDot: {
-    position: "absolute",
-    bottom: -2,
-    width: 4,
-    height: 4,
-    borderRadius: "50%",
-    background: "#e2e8f0",
-  },
-};

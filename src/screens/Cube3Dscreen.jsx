@@ -297,14 +297,6 @@ export default function Cube3Dscreen() {
             )}
           </div>
           <div style={s.headerBtns}>
-            <button
-              style={{ ...s.iconBtn, background: showNotations ? "rgba(102,126,234,0.2)" : "rgba(255,255,255,0.06)", borderColor: showNotations ? "rgba(102,126,234,0.4)" : "rgba(255,255,255,0.1)", color: showNotations ? "#a5b4fc" : "#64748b" }}
-              onClick={() => setShowNotations(n => !n)}
-              title="Toggle move notation buttons"
-            >
-              {showNotations ? "𝄜" : "𝄜"}
-              <span style={{ fontSize:10, marginLeft:3 }}>{showNotations ? "Hide" : "Moves"}</span>
-            </button>
             {/* ── Scramble button + dropdown ── */}
             <div style={{ position:"relative" }}>
               <button
@@ -334,17 +326,6 @@ export default function Cube3Dscreen() {
                 </div>
               )}
             </div>
-            <button
-              style={{
-                ...s.iconBtn,
-                opacity: moveHistory.length === 0 || isAutoSolving ? 0.35 : 1,
-              }}
-              onClick={handleUndo}
-              disabled={moveHistory.length === 0 || isAutoSolving}
-              title="Undo last move"
-            >
-              ↩ <span style={{ fontSize:10, marginLeft:2 }}>Undo</span>
-            </button>
             <button style={s.iconBtn} onClick={handleReset} title="Reset">
               ↺ <span style={{ fontSize:10, marginLeft:2 }}>Reset</span>
             </button>
@@ -370,6 +351,37 @@ export default function Cube3Dscreen() {
             }
           }}
         />
+        <div style={s.floatingBtns}>
+          <button
+            style={{
+              ...s.floatBtn,
+              opacity: moveHistory.length === 0 || isAutoSolving ? 0.35 : 1,
+            }}
+            onClick={handleUndo}
+            disabled={moveHistory.length === 0 || isAutoSolving}
+            title="Undo last move"
+          >
+            ↩
+            <span style={s.floatBtnLabel}>Undo</span>
+          </button>
+          <button
+            style={{
+              ...s.floatBtn,
+              background: showNotations
+                ? "rgba(102,126,234,0.35)"
+                : "rgba(0,0,0,0.55)",
+              borderColor: showNotations
+                ? "rgba(102,126,234,0.5)"
+                : "rgba(255,255,255,0.12)",
+              color: showNotations ? "#a5b4fc" : "#94a3b8",
+            }}
+            onClick={() => setShowNotations(n => !n)}
+            title="Toggle moves panel"
+          >
+            𝄜
+            <span style={s.floatBtnLabel}>Moves</span>
+          </button>
+        </div>
         {/* Overlay hint — fades after solve starts */}
         {moveHistory.length === 0 && !isAutoSolving && (
           <div style={s.canvasHint}>
@@ -515,6 +527,40 @@ canvasWrapper: {
     border:"1px solid rgba(255,255,255,0.07)",
     background:"radial-gradient(ellipse at 50% 30%, rgba(102,126,234,0.08) 0%, rgba(8,8,16,0.95) 70%)",
     boxShadow:"0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+  },
+  floatingBtns: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    zIndex: 10,
+  },
+  floatBtn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    background: "rgba(0,0,0,0.55)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    backdropFilter: "blur(10px)",
+    color: "#94a3b8",
+    fontSize: 16,
+    cursor: "pointer",
+    transition: "all 0.15s",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+  },
+  floatBtnLabel: {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.04em",
+    lineHeight: 1,
   },
   canvasHint: {
     position:"absolute", bottom:12, left:"50%", transform:"translateX(-50%)",
