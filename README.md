@@ -19,7 +19,8 @@
 
 ## Overview
 
-**Cube Solve** is a full-stack web application that leverages computer vision and advanced solving algorithms to help users solve Rubik's cubes. Scan all six faces of your cube with your device camera, and the application will generate an optimal solution using the Kociemba algorithm, displaying moves in a beautiful 3D visualization.
+**Cube Solve** is a full-stack web application that uses computer vision and the Kociemba algorithm to generate optimal Rubik's Cube solutions in ≤20 moves. Scan all six faces with your camera or enter colors manually, then follow the solution through interactive 3D visualization or a step-by-step move guide.
+
 
 ---
 ### Application Workflow
@@ -70,13 +71,14 @@ graph TD
 ## Features
 
 - **Camera Scanning** - Real-time color detection from device camera
-- **Optimal Solving** - Uses Kociemba algorithm (solves any cube in ≤20 moves)
+- **Optimal Solving** - Kociemba algorithm solves any cube in ≤20 moves
 - **3D Visualization** - Interactive Three.js cube rendering with smooth animations
 - **Manual Input** - Enter cube colors manually if camera scanning isn't available
-- **Solution Review** - Step-by-step move guide with visual feedback
+- **Solution Review** - Step-by-step move guide with visual diagrams
 - **History Tracking** - Save and review past cube solutions
 - **Settings Panel** - Customize preferences and reset data
 - **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
+
 
 ---
 
@@ -92,8 +94,7 @@ graph TD
 
 ### Algorithms & Solving
 - **Kociemba WASM** - WebAssembly-based optimal cube solver
-- **Cube Solver** - Cube state representation and manipulation
-- **Cubing.js** - Move notation and standard cube terminology
+- **Cubing.js** - Move notation and cube state manipulation
 
 ### Development
 - **ESLint 10** - Code quality and style enforcement
@@ -107,42 +108,31 @@ graph TD
 
 1. **Welcome Screen** - Read the 4-step process overview
 2. **Choose Input Method**
-   -  **Scan with Camera**: Allow camera access and scan each face
-   -  **Enter Manually**: Input cube colors through the UI
+   - **Scan with Camera**: Allow camera access and scan each face
+   - **Enter Manually**: Input cube colors through the UI
 3. **Review Data** - Verify all detected/entered colors are correct
 4. **Generate Solution** - Algorithm computes optimal move sequence
 5. **Follow Guide** - Watch the 3D cube and follow step-by-step instructions
 6. **Success!** - Celebrate your solved cube
 
 ---
+## Changelog
 
-## Configuration
-
-### Vite
-- Fast HMR for development
-- Optimized production builds with rollup
-- CSS preprocessing support
-
-### ESLint
-- React best practices enforcement
-- React Hooks linting rules
-- Code consistency and style
-
-### Camera Permissions
-- Application requests camera access when scanning starts
-- User can deny or revoke permissions anytime
-- Graceful fallback to manual entry
+### v1.1.0 — Bug Fixes
+- **Fixed** D and B face tile index mapping in Review screen (vertical flip correction)
+- **Fixed** U and D move arrow directions in Solution screen
+- **Fixed** B face sticker mapping in 3D renderer (`SCAN_TO_3D`)
+- **Fixed** Empty Kociemba result incorrectly treated as "already solved"
+- **Fixed** Invalid cube state now correctly returns error instead of false positive
 
 ---
 
 ## Future Enhancements
 
-- [ ] Two-phase solving algorithm option (beginner-friendly)
-- [ ] Multiple language support
-- [ ] Dark/Light theme toggle
+- [ ] PWA support — offline mode after first visit
+- [ ] Two-phase solving algorithm (beginner-friendly)
 - [ ] Share solutions via URL
 - [ ] Leaderboard and statistics tracking
-- [ ] Mobile app with native camera features
 
 ---
 
