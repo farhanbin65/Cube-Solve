@@ -39,7 +39,8 @@ export async function solveCube(faceColorsOrString) {
     console.log("Sending to kociemba:", cubeStr);
     const result = await kociemba.solve(cubeStr);
     console.log("🧩 Raw result:", result);
-    if (!result || result.trim() === "") return null;
+    if (result === null || result === undefined) return null;
+    if (result.trim() === "") return []; // empty string = already solved
     return result.trim().split(/\s+/).filter(Boolean);
   } catch (e) {
     console.error("💥 Solver error:", e);

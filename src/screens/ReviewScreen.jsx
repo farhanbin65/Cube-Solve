@@ -187,7 +187,7 @@ const handleTileClick = (faceKey, cellIndex, e) => {
     if (selectedFace === null || selectedCell === null) return;
 
     // ONE transformation here — convert visual ci to data index
-    const actualIndex = ["B", "D"].includes(selectedFace)
+    const actualIndex = ["D"].includes(selectedFace)
       ? [6,7,8,3,4,5,0,1,2][selectedCell]
       : selectedCell;
 
@@ -422,7 +422,7 @@ const handleTileClick = (faceKey, cellIndex, e) => {
 // ── Face Card ──────────────────────────────────────────────
 
 function FaceCard({ face, tiles, neighbours, selectedCell, onTileClick }) {
-  const displayTiles = ["B", "D"].includes(face.key)
+  const displayTiles = ["D"].includes(face.key)
     ? [tiles[6],tiles[7],tiles[8],tiles[3],tiles[4],tiles[5],tiles[0],tiles[1],tiles[2]]
     : tiles;
 

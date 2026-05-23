@@ -29,7 +29,7 @@ const SCAN_TO_3D = {
   F: [0,1,2,3,4,5,6,7,8], // no change
   D: [6,7,8,3,4,5,0,1,2], // mirror vertically
   L: [2,1,0,5,4,3,8,7,6], // mirror horizontally
-  B: [0,1,2,3,4,5,6,7,8], // no change
+  B: [6,7,8,3,4,5,0,1,2] // mirror vertically
 };
 
 function getStickerColor(faceColors, x, y, z, direction) {
