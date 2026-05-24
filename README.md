@@ -11,7 +11,7 @@
 
 **A precision AI-powered Rubik's Cube solver with camera scanning and step-by-step visualization**
 
-[Features](#-features) • [Demo](#-getting-started) • [Tech Stack](#-tech-stack) •   [Usage](#-usage)
+[Features](#-features) • [Demo](#-live-demo) • [Tech Stack](#-tech-stack) • [Usage](#-usage)
 
 </div>
 
@@ -20,6 +20,15 @@
 ## Overview
 
 **Cube Solve** is a full-stack web application that uses computer vision and the Kociemba algorithm to generate optimal Rubik's Cube solutions in ≤20 moves. Scan all six faces with your camera or enter colors manually, then follow the solution through interactive 3D visualization or a step-by-step move guide.
+
+---
+
+## 🔴 Live Demo
+
+| Version | Link |
+|---|---|
+| 🌐 Web App | [solvecuber.netlify.app](https://solvecuber.netlify.app) |
+| 🎮 itch.io | [farhanbin.itch.io/rubiks-cube-3d-scanner](https://farhanbin.itch.io/rubiks-cube-3d-scanner) |
 
 
 ---
