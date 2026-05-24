@@ -23,11 +23,21 @@
 
 ---
 
-## 🔴 Live Demo
+## Live Demo
 
 🌐 **Web App** → [solvecuber.netlify.app](https://solvecuber.netlify.app)
 
 🎮 **itch.io** → [farhanbin.itch.io/rubiks-cube-3d-scanner](https://farhanbin.itch.io/rubiks-cube-3d-scanner)
+
+---
+
+## 📸 Screenshots
+
+### Scanning & Solution Guide
+![Camera scan, step-by-step solution, and 3D cube view](./src/assets/ss_2.webp)
+
+### Solving & History
+![Solved screen, settings, and history](./src/assets/ss_1.webp)
 
 ---
 ### Application Workflow
